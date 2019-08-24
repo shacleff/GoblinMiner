@@ -27,9 +27,10 @@ export default class Tile extends cc.Component {
     }
 
     initTile(data:TileData){
+        this.data =data;
         this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
         this.sprite.spriteFrame = data.isGround?Logic.spriteFrames[data.resName+'ground']:Logic.spriteFrames[data.resName];
-        this.node.position = GameWorld.getPosInMap(cc.v2(data.x,data.y));
+        this.node.position = GameWorld.getPosInMap(data.posIndex);
     }
     start () {
 

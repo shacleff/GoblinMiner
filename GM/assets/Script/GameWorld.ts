@@ -28,27 +28,30 @@ export default class GameWorld extends cc.Component {
     actorLayer:cc.Node;
     player: Player = null;
     map:Tile[][] = [];
-    static WIDTH_SIZE: number = 15;
-    static HEIGHT_SIZE: number = 9;
-    static readonly MAPX: number = 32;
-    static readonly MAPY: number = 32;
     static readonly TILE_SIZE: number = 64;
+    static WIDTH_SIZE: number = 11;
+    static HEIGHT_SIZE: number = 15;
+    static MAPX: number = -GameWorld.WIDTH_SIZE*GameWorld.TILE_SIZE/2;
+    static MAPY: number = 32;
     onLoad() {
+        cc.log(GameWorld.MAPX);
         this.actorLayer = this.node.getChildByName('actorlayer');
         this.actorLayer.zIndex = 2000;
         this.player = cc.instantiate(this.playerPrefab).getComponent(Player);
         this.player.node.parent = this.node;
         this.player.node.zIndex = 3000;
+        this.player.node.position = GameWorld.getPosInMap(cc.v2(Math.floor(GameWorld.WIDTH_SIZE/2),GameWorld.HEIGHT_SIZE));
         this.initMap();
     }
 
     initMap(){
         this.map = new Array();
-        for(let i = 0;i < 16;i++){
+        for(let i = 0;i < GameWorld.WIDTH_SIZE;i++){
             this.map[i] = new Array();
-            for(let j = 0;j< 21;j++){
+            for(let j = 0;j< GameWorld.HEIGHT_SIZE;j++){
                 let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
-                tile.initTile(new TileData('00',GameWorld.getPosInMap(cc.v2(i,j)),'tile000'));
+                tile.initTile(new TileData('00',cc.v2(i,j),'tile000',j==GameWorld.HEIGHT_SIZE-1));
+                this.actorLayer.addChild(tile.node);
                 this.map[i][j] = tile;
             }
         }
@@ -80,7 +83,7 @@ export default class GameWorld extends cc.Component {
 
     //获取地图里下标的坐标
     static getPosInMap(pos: cc.Vec2) {
-        let x = GameWorld.MAPX + pos.x * GameWorld.TILE_SIZE;
+        let x = GameWorld.MAPX + pos.x * GameWorld.TILE_SIZE+GameWorld.TILE_SIZE/2;
         let y = GameWorld.MAPY + pos.y * GameWorld.TILE_SIZE;
         return cc.v2(x, y);
     }
