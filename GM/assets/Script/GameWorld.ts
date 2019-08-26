@@ -26,21 +26,26 @@ export default class GameWorld extends cc.Component {
     private timeDelay = 0;
     private checkTimeDelay = 0;
     actorLayer:cc.Node;
-    player: Player = null;
+    // player: Player = null;
+    playerIndex:cc.Vec2 = cc.v2(Math.floor(GameWorld.WIDTH_SIZE/2),GameWorld.HEIGHT_SIZE-1);
     map:Tile[][] = [];
-    static readonly TILE_SIZE: number = 64;
-    static WIDTH_SIZE: number = 11;
-    static HEIGHT_SIZE: number = 15;
+    static readonly BOTTOM_LINE_INDEX = 9;
+    static readonly TILE_SIZE: number = 80;
+    static WIDTH_SIZE: number = 9;
+    static HEIGHT_SIZE: number = 11;
     static MAPX: number = -GameWorld.WIDTH_SIZE*GameWorld.TILE_SIZE/2;
-    static MAPY: number = 32;
+    static MAPY: number = 64;
     onLoad() {
         cc.log(GameWorld.MAPX);
+        cc.director.on(EventConstant.TILE_CLICK,(event)=>{
+            this.tileClicked(event.detail.tileData);
+        })
         this.actorLayer = this.node.getChildByName('actorlayer');
         this.actorLayer.zIndex = 2000;
-        this.player = cc.instantiate(this.playerPrefab).getComponent(Player);
-        this.player.node.parent = this.node;
-        this.player.node.zIndex = 3000;
-        this.player.node.position = GameWorld.getPosInMap(cc.v2(Math.floor(GameWorld.WIDTH_SIZE/2),GameWorld.HEIGHT_SIZE));
+        // this.player = cc.instantiate(this.playerPrefab).getComponent(Player);
+        // this.player.node.parent = this.node;
+        // this.player.node.zIndex = 3000;
+        // this.player.node.position = GameWorld.getPosInMap(cc.v2(Math.floor(GameWorld.WIDTH_SIZE/2),GameWorld.HEIGHT_SIZE));
         this.initMap();
     }
 
@@ -50,13 +55,54 @@ export default class GameWorld extends cc.Component {
             this.map[i] = new Array();
             for(let j = 0;j< GameWorld.HEIGHT_SIZE;j++){
                 let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
-                tile.initTile(new TileData('00',cc.v2(i,j),'tile000',j==GameWorld.HEIGHT_SIZE-1));
+                let ran = Random.getRandomNum(1,6);
+                tile.initTile(new TileData('0'+ran,cc.v2(i,j),'tile00'+ran,j==GameWorld.HEIGHT_SIZE-2));
+                
+                if(this.playerIndex.x == i&& this.playerIndex.y-1 == j){
+                    tile.initTile(new TileData('0'+ran,cc.v2(i,j),'tile00'+ran,true));
+                }
+                if(j==GameWorld.HEIGHT_SIZE-1){
+                    tile.initTile(new TileData('00',cc.v2(i,j),'tile000',true));
+                }
+                if(this.playerIndex.x == i&& this.playerIndex.y == j){
+                    tile.initTile(new TileData('a0',cc.v2(i,j),'player',false));
+                }
                 this.actorLayer.addChild(tile.node);
                 this.map[i][j] = tile;
             }
         }
     }
-    start() {
+    tileClicked(data:TileData){
+        // let d = new TileData('',cc.v2(0,0),'',false);
+        // d.valueCopy(data);
+        // let i = d.posIndex.x;
+        // let j = d.posIndex.y;
+        // let x = this.playerIndex.x;
+        // let y = this.playerIndex.y;
+        // this.map[x][y].initTile(new TileData('00',cc.v2(x,y),'tile000',true));
+        // this.map[i][j].initTile(new TileData('a0',cc.v2(i,j),'player',false));
+        // if(j-1>=0){
+        //     this.map[i][j-1].data.isGround = true;
+        //     this.map[i][j-1].updateTile();
+        // }
+        // this.playerIndex = d.posIndex.clone();
+        // if(this.playerIndex.y<=GameWorld.BOTTOM_LINE_INDEX){
+        // }
+        this.updateMap();
+    }
+    updateMap() {
+        for(let i = GameWorld.WIDTH_SIZE-1;i >=0;i--){
+            for(let j = GameWorld.HEIGHT_SIZE-1;j>=0;j--){
+                if(j>0){
+                    this.map[i][j].data.valueCopy(this.map[i][j-1].data);
+                }else{
+                    let ran = Random.getRandomNum(1,6);
+                    let d = new TileData('0'+ran,cc.v2(i,j),'tile00'+ran,j==GameWorld.HEIGHT_SIZE-2);
+                    this.map[i][j].data.valueCopy(d);
+                }
+                this.map[i][j].updateTile();
+            }
+        }
     }
   
     

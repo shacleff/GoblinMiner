@@ -10,4 +10,10 @@ export default class TileData{
         this.resName = resName;
         this.isGround = isGround;
     }
+    valueCopy(data:TileData){
+        this.tileType = data.tileType;
+        this.resName = data.resName;
+        this.isGround = data.isGround;
+        this.posIndex = cc.v2(data.posIndex.x,data.posIndex.y);
+    }
 }

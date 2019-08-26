@@ -1,0 +1,32 @@
+{
+  "ver": "2.3.1",
+  "uuid": "911324b3-f6d2-4dd2-b373-00cd6d38faff",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "point",
+  "premultiplyAlpha": false,
+  "platformSettings": {},
+  "subMetas": {
+    "tile002ground": {
+      "ver": "1.0.4",
+      "uuid": "098fa2b9-997a-4386-82ca-5142b6cc3033",
+      "rawTextureUuid": "911324b3-f6d2-4dd2-b373-00cd6d38faff",
+      "trimType": "custom",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 0,
+      "offsetY": 0,
+      "trimX": 0,
+      "trimY": 0,
+      "width": 32,
+      "height": 32,
+      "rawWidth": 32,
+      "rawHeight": 32,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

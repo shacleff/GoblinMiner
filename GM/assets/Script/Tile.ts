@@ -1,6 +1,7 @@
 import TileData from "./data/TileData";
 import Logic from "./Logic";
 import GameWorld from "./GameWorld";
+import { EventConstant } from "./EventConstant";
 
 // Learn TypeScript:
 //  - [Chinese] https://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -24,15 +25,32 @@ export default class Tile extends cc.Component {
 
     onLoad () {
         this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
+        this.node.on(cc.Node.EventType.TOUCH_START,()=>{
+            cc.director.emit(EventConstant.TILE_CLICK,{detail:{tileData:this.data}});
+        },this);
+        this.node.on(cc.Node.EventType.TOUCH_END,()=>{},this);
+        this.node.on(cc.Node.EventType.TOUCH_CANCEL,()=>{},this);
     }
 
     initTile(data:TileData){
         this.data =data;
-        this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
+        if(!this.sprite){
+            this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
+        }
         this.sprite.spriteFrame = data.isGround?Logic.spriteFrames[data.resName+'ground']:Logic.spriteFrames[data.resName];
         this.node.position = GameWorld.getPosInMap(data.posIndex);
     }
+    updateTile(){
+        if(!this.sprite){
+            this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
+        }
+        this.sprite.spriteFrame = this.data.isGround?Logic.spriteFrames[this.data.resName+'ground']:Logic.spriteFrames[this.data.resName];
+        this.node.position = GameWorld.getPosInMap(this.data.posIndex);
+    }
     start () {
+
+    }
+    changeTile(){
 
     }
 
