@@ -20,16 +20,24 @@ export default class Tile extends cc.Component {
 
     data:TileData;
     sprite:cc.Sprite;
+    glow:cc.Node;
 
     // LIFE-CYCLE CALLBACKS:
 
     onLoad () {
         this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
+        this.glow = this.node.getChildByName('glow');
+        this.glow.opacity = 0;
         this.node.on(cc.Node.EventType.TOUCH_START,()=>{
-            cc.director.emit(EventConstant.TILE_CLICK,{detail:{tileData:this.data}});
+            this.glow.opacity = 80;
         },this);
-        this.node.on(cc.Node.EventType.TOUCH_END,()=>{},this);
-        this.node.on(cc.Node.EventType.TOUCH_CANCEL,()=>{},this);
+        this.node.on(cc.Node.EventType.TOUCH_END,()=>{
+            cc.director.emit(EventConstant.TILE_CLICK,{detail:{posIndex:this.data.posIndex}});
+            this.glow.opacity = 0;
+        },this);
+        this.node.on(cc.Node.EventType.TOUCH_CANCEL,()=>{
+            this.glow.opacity = 0;
+        },this);
     }
 
     initTile(data:TileData){
@@ -37,7 +45,10 @@ export default class Tile extends cc.Component {
         if(!this.sprite){
             this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
         }
-        this.sprite.spriteFrame = data.isGround?Logic.spriteFrames[data.resName+'ground']:Logic.spriteFrames[data.resName];
+        this.sprite.spriteFrame = Logic.spriteFrames[data.resName];
+        if(data.isGround&&Logic.spriteFrames[data.resName+'ground']){
+            this.sprite.spriteFrame = Logic.spriteFrames[data.resName+'ground'];
+        }
         this.node.position = GameWorld.getPosInMap(data.posIndex);
     }
     updateTile(){

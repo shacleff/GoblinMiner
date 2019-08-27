@@ -29,7 +29,7 @@ export default class GameWorld extends cc.Component {
     // player: Player = null;
     playerIndex:cc.Vec2 = cc.v2(Math.floor(GameWorld.WIDTH_SIZE/2),GameWorld.HEIGHT_SIZE-1);
     map:Tile[][] = [];
-    static readonly BOTTOM_LINE_INDEX = 9;
+    static readonly BOTTOM_LINE_INDEX = 5;
     static readonly TILE_SIZE: number = 80;
     static WIDTH_SIZE: number = 9;
     static HEIGHT_SIZE: number = 11;
@@ -38,7 +38,7 @@ export default class GameWorld extends cc.Component {
     onLoad() {
         cc.log(GameWorld.MAPX);
         cc.director.on(EventConstant.TILE_CLICK,(event)=>{
-            this.tileClicked(event.detail.tileData);
+            this.tileClicked(event.detail.posIndex);
         })
         this.actorLayer = this.node.getChildByName('actorlayer');
         this.actorLayer.zIndex = 2000;
@@ -72,37 +72,103 @@ export default class GameWorld extends cc.Component {
             }
         }
     }
-    tileClicked(data:TileData){
-        // let d = new TileData('',cc.v2(0,0),'',false);
-        // d.valueCopy(data);
-        // let i = d.posIndex.x;
-        // let j = d.posIndex.y;
-        // let x = this.playerIndex.x;
-        // let y = this.playerIndex.y;
-        // this.map[x][y].initTile(new TileData('00',cc.v2(x,y),'tile000',true));
-        // this.map[i][j].initTile(new TileData('a0',cc.v2(i,j),'player',false));
-        // if(j-1>=0){
-        //     this.map[i][j-1].data.isGround = true;
-        //     this.map[i][j-1].updateTile();
+    tileClicked(posIndex:cc.Vec2){
+        let i = posIndex.x;
+        let j = posIndex.y;
+        let x = this.playerIndex.x;
+        let y = this.playerIndex.y;
+        let isDown = x==i&&y-j==1;
+        let isLeftRight = y==j;
+        // if(!isDown&&!isLeftRight){
+        //     return;
         // }
-        // this.playerIndex = d.posIndex.clone();
-        // if(this.playerIndex.y<=GameWorld.BOTTOM_LINE_INDEX){
-        // }
-        this.updateMap();
+        if(x==i&&y==j){
+            return;
+        }
+        let pos = this.getReachablePathEndIndex(this.map[i][j].data);
+        if(pos.x==-1&&pos.y==-1){
+            return;
+        }
+        i = pos.x;
+        j = pos.y;
+        //交换玩家位置并清除原来位置
+        this.map[x][y].data.statusCopy(TileData.getEmptyTileData())
+        this.map[x][y].updateTile();
+        this.map[i][j].data.statusCopy(TileData.getPlayerTileData())
+        this.map[i][j].updateTile();
+        //修改脚下为地板
+        if(j-1>=0){
+            this.map[i][j-1].data.isGround = true;
+            this.map[i][j-1].updateTile();
+        }
+        //保存玩家位置
+        this.playerIndex = cc.v2(i,j);
+        //往下走更新地图
+        if(this.playerIndex.y<=GameWorld.BOTTOM_LINE_INDEX&&isDown){
+            this.updateMap();
+        }
+    }
+    getReachablePathEndIndex(data:TileData):cc.Vec2{
+        let tx = data.posIndex.x;
+        let ty = data.posIndex.y;
+        let px = this.playerIndex.x;
+        let py = this.playerIndex.y;
+        let isDown = px==tx&&py-ty==1;
+        let isLeftRight = py==ty&&Math.abs(px-tx)==1;
+        if(isLeftRight){
+            return cc.v2(tx,ty);
+        }
+        if(isDown){
+            return cc.v2(tx,ty);
+        }
+        let pos = cc.v2(-1,-1);
+        if(px-tx>0){
+            for(let i = px-1;i >= tx;i--){
+                if(this.map[i][py].data.tileType != '00'){
+                    pos = cc.v2(i+1,py);
+                    break;
+                }
+            } 
+        }else if(tx-px>0){
+            for(let i = px+1;i <= tx;i++){
+                if(this.map[i][py].data.tileType != '00'){
+                    pos = cc.v2(i-1,py);
+                }
+            }
+        }
+        if(pos.x!=-1&&pos.y!=-1){
+            return pos;
+        }
+        if(py-ty>0){
+            for(let i = py-1;i >= ty;i--){
+                if(this.map[px][i].data.tileType != '00'){
+                    pos = cc.v2(px,i+1);
+                }
+            }
+        }else if(ty-py>0){
+            for(let i = py+1;i <= ty;i++){
+                if(this.map[px][i].data.tileType != '00'){
+                    pos = cc.v2(px,i-1);
+                }
+            }
+        }
+        return pos;
+       
     }
     updateMap() {
         for(let i = GameWorld.WIDTH_SIZE-1;i >=0;i--){
             for(let j = GameWorld.HEIGHT_SIZE-1;j>=0;j--){
                 if(j>0){
-                    this.map[i][j].data.valueCopy(this.map[i][j-1].data);
+                    this.map[i][j].data.statusCopy(this.map[i][j-1].data);
                 }else{
                     let ran = Random.getRandomNum(1,6);
                     let d = new TileData('0'+ran,cc.v2(i,j),'tile00'+ran,j==GameWorld.HEIGHT_SIZE-2);
-                    this.map[i][j].data.valueCopy(d);
+                    this.map[i][j].data.statusCopy(d);
                 }
                 this.map[i][j].updateTile();
             }
         }
+        this.playerIndex.y+=1;
     }
   
     
