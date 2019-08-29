@@ -37,8 +37,8 @@ export default class GameWorld extends cc.Component {
     static MAPY: number = 64;
     onLoad() {
         cc.log(GameWorld.MAPX);
-        cc.director.on(EventConstant.TILE_CLICK,(event)=>{
-            this.tileClicked(event.detail.posIndex);
+        cc.director.on(EventConstant.TILE_SWITCH,(event)=>{
+            this.tileSwitched(event.detail.tapPos,event.detail.targetPos);
         })
         this.actorLayer = this.node.getChildByName('actorlayer');
         this.actorLayer.zIndex = 2000;
@@ -72,88 +72,60 @@ export default class GameWorld extends cc.Component {
             }
         }
     }
-    tileClicked(posIndex:cc.Vec2){
-        let i = posIndex.x;
-        let j = posIndex.y;
-        let x = this.playerIndex.x;
-        let y = this.playerIndex.y;
-        let isDown = x==i&&y-j==1;
-        let isLeftRight = y==j;
-        // if(!isDown&&!isLeftRight){
-        //     return;
-        // }
-        if(x==i&&y==j){
+    tileSwitched(tapPos:cc.Vec2,switchPos:cc.Vec2){
+        if(switchPos.x>this.map.length-1||switchPos.x<0||switchPos.y>this.map[0].length-1||switchPos.y<0){
             return;
         }
-        let pos = this.getReachablePathEndIndex(this.map[i][j].data);
-        if(pos.x==-1&&pos.y==-1){
-            return;
-        }
-        i = pos.x;
-        j = pos.y;
-        //交换玩家位置并清除原来位置
-        this.map[x][y].data.statusCopy(TileData.getEmptyTileData())
-        this.map[x][y].updateTile();
-        this.map[i][j].data.statusCopy(TileData.getPlayerTileData())
-        this.map[i][j].updateTile();
-        //修改脚下为地板
-        if(j-1>=0){
-            this.map[i][j-1].data.isGround = true;
-            this.map[i][j-1].updateTile();
-        }
-        //保存玩家位置
-        this.playerIndex = cc.v2(i,j);
-        //往下走更新地图
-        if(this.playerIndex.y<=GameWorld.BOTTOM_LINE_INDEX&&isDown){
-            this.updateMap();
+        let tile1 = this.map[tapPos.x][tapPos.y];
+        let tile2 = this.map[switchPos.x][switchPos.y];
+        if(this.isValidSwitch(tapPos,switchPos)){
+            tile1.node.runAction(cc.moveTo(0.1,GameWorld.getPosInMap(tile2.data.posIndex)));
+            tile2.node.runAction(cc.moveTo(0.1,GameWorld.getPosInMap(tile1.data.posIndex)));
+            let pos = tile1.data.posIndex;
+            tile1.data.posIndex = tile2.data.posIndex.clone();
+            tile2.data.posIndex = pos.clone();
+            this.map[tapPos.x][tapPos.y] = tile2;
+            this.map[switchPos.x][switchPos.y] = tile1;
+        }else{
+            tile1.node.runAction(cc.sequence(cc.moveTo(0.1,GameWorld.getPosInMap(tile2.data.posIndex))
+            ,cc.moveTo(0.1,GameWorld.getPosInMap(tile1.data.posIndex))));
+            tile2.node.runAction(cc.sequence(cc.moveTo(0.1,GameWorld.getPosInMap(tile1.data.posIndex))
+            ,cc.moveTo(0.1,GameWorld.getPosInMap(tile2.data.posIndex))));
         }
     }
-    getReachablePathEndIndex(data:TileData):cc.Vec2{
-        let tx = data.posIndex.x;
-        let ty = data.posIndex.y;
-        let px = this.playerIndex.x;
-        let py = this.playerIndex.y;
-        let isDown = px==tx&&py-ty==1;
-        let isLeftRight = py==ty&&Math.abs(px-tx)==1;
-        if(isLeftRight){
-            return cc.v2(tx,ty);
+    isValidSwitch(tapPos:cc.Vec2,switchPos:cc.Vec2):boolean{
+        let tile1 = this.map[tapPos.x][tapPos.y];
+        let tile2 = this.map[switchPos.x][switchPos.y];
+        let dir = 0;
+        if(switchPos.x - tapPos.x == 1){
+            dir = 3;
         }
-        if(isDown){
-            return cc.v2(tx,ty);
+        if(switchPos.x - tapPos.x == -1){
+            dir = 2;
         }
-        let pos = cc.v2(-1,-1);
-        if(px-tx>0){
-            for(let i = px-1;i >= tx;i--){
-                if(this.map[i][py].data.tileType != '00'){
-                    pos = cc.v2(i+1,py);
-                    break;
-                }
-            } 
-        }else if(tx-px>0){
-            for(let i = px+1;i <= tx;i++){
-                if(this.map[i][py].data.tileType != '00'){
-                    pos = cc.v2(i-1,py);
-                }
-            }
+        if(switchPos.y - tapPos.y == -1){
+            dir = 1;
         }
-        if(pos.x!=-1&&pos.y!=-1){
-            return pos;
+        if(switchPos.y - tapPos.y == 1){
+            dir = 0;
         }
-        if(py-ty>0){
-            for(let i = py-1;i >= ty;i--){
-                if(this.map[px][i].data.tileType != '00'){
-                    pos = cc.v2(px,i+1);
-                }
-            }
-        }else if(ty-py>0){
-            for(let i = py+1;i <= ty;i++){
-                if(this.map[px][i].data.tileType != '00'){
-                    pos = cc.v2(px,i-1);
-                }
-            }
+        
+        if(this.isTypeEqual(cc.v2(switchPos.x+1,switchPos.y),tapPos)&&this.isTypeEqual(cc.v2(switchPos.x-1,switchPos.y),tapPos)){
+            return true;
         }
-        return pos;
-       
+        if(this.isTypeEqual(cc.v2(switchPos.x,switchPos.y+1),tapPos)&&this.isTypeEqual(cc.v2(switchPos.x,switchPos.y-1),tapPos)){
+            return true;
+        }
+        return false;
+    }
+    isTypeEqual(pos1:cc.Vec2,pos2:cc.Vec2):boolean{
+        if(pos1.x>this.map.length-1||pos1.x<0||pos1.y>this.map[0].length-1||pos1.y<0){
+            return false;
+        }
+        if(pos2.x>this.map.length-1||pos2.x<0||pos2.y>this.map[0].length-1||pos2.y<0){
+            return false;
+        }
+        return this.map[pos1.x][pos1.y].data.tileType == this.map[pos2.x][pos2.y].data.tileType;
     }
     updateMap() {
         for(let i = GameWorld.WIDTH_SIZE-1;i >=0;i--){

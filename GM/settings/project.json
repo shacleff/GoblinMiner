@@ -11,7 +11,10 @@
   ],
   "design-resolution-height": 1280,
   "design-resolution-width": 720,
-  "excluded-modules": [],
+  "excluded-modules": [
+    "VideoPlayer",
+    "WebView"
+  ],
   "facebook": {
     "appID": "",
     "audience": {
@@ -28,7 +31,7 @@
     "default",
     "ui"
   ],
-  "last-module-event-record-time": 0,
+  "last-module-event-record-time": 1567084246284,
   "simulator-orientation": false,
   "simulator-resolution": {
     "height": 640,
