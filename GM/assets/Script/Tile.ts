@@ -36,6 +36,10 @@ export default class Tile extends cc.Component {
             this.glow.opacity = 0;
         },this);
         this.node.on(cc.Node.EventType.TOUCH_CANCEL,(event:cc.Event.EventTouch)=>{
+            if(Logic.isProcessing){
+                this.glow.opacity = 0;
+                return;
+            }
             let end = this.node.convertToNodeSpace(event.getLocation());
             let pos = this.data.posIndex.clone();
             if(Utils.getDistance(cc.v2(0,0),end)<32){
@@ -58,16 +62,13 @@ export default class Tile extends cc.Component {
             this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
         }
         this.sprite.spriteFrame = Logic.spriteFrames[data.resName];
-        if(data.isGround&&Logic.spriteFrames[data.resName+'ground']){
-            this.sprite.spriteFrame = Logic.spriteFrames[data.resName+'ground'];
-        }
         this.node.position = GameWorld.getPosInMap(data.posIndex);
     }
     updateTile(){
         if(!this.sprite){
             this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
         }
-        this.sprite.spriteFrame = this.data.isGround?Logic.spriteFrames[this.data.resName+'ground']:Logic.spriteFrames[this.data.resName];
+        this.sprite.spriteFrame = Logic.spriteFrames[this.data.resName];
         this.node.position = GameWorld.getPosInMap(this.data.posIndex);
     }
     start () {

@@ -13,6 +13,7 @@ const { ccclass, property } = cc._decorator;
 @ccclass
 export default class Logic extends cc.Component {
     static isPaused = false;
+    static isProcessing = false;
     //图片资源
     static spriteFrames: { [key: string]: cc.SpriteFrame } = null;
     // LIFE-CYCLE CALLBACKS:
