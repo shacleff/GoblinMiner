@@ -34,6 +34,7 @@ export default class GameWorld extends cc.Component {
     static MAPX: number = -GameWorld.WIDTH_SIZE * GameWorld.TILE_SIZE / 2;
     static MAPY: number = 64;
     boomList:cc.Vec2[] = [];
+    fallMap: { [key: string]: cc.Vec3 } = {};
     onLoad() {
         cc.log(GameWorld.MAPX);
         cc.director.on(EventConstant.TILE_SWITCH, (event) => {
@@ -53,31 +54,30 @@ export default class GameWorld extends cc.Component {
         for (let i = 0; i < GameWorld.WIDTH_SIZE; i++) {
             this.map[i] = new Array();
             for (let j = 0; j < GameWorld.HEIGHT_SIZE; j++) {
-                let tile = this.getRandomTile(i,j);
+                let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
+                tile.initTile(TileData.getRandomTileData(i,j));
                 this.actorLayer.addChild(tile.node);
                 this.map[i][j] = tile;
             }
         }
     }
-    getRandomTile(i:number,j:number): Tile {
-        let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
-        let ran = Random.getRandomNum(1, 6);
-        tile.initTile(new TileData('0' + ran, cc.v2(i, j), 'tile00' + ran));
-        return tile;
-    }
    
-    tileSwitched(tapPos: cc.Vec2, switchPos: cc.Vec2,isFall:boolean) {
-        if (switchPos.x > this.map.length - 1 || switchPos.x < 0 || switchPos.y > this.map[0].length - 1 || switchPos.y < 0) {
+    tileSwitched(tapPos: cc.Vec2, targetPos: cc.Vec2,isFall:boolean) {
+        if (targetPos.x > this.map.length - 1 || targetPos.x < 0 || targetPos.y > this.map[0].length - 1 || targetPos.y < 0) {
             return;
         }
         let tile1 = this.map[tapPos.x][tapPos.y];
-        let tile2 = this.map[switchPos.x][switchPos.y];
-        if (this.isValidSwitch(tapPos, switchPos)) {
-            tile1.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex)));
-            tile2.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex)));
-            this.switchTileData(tapPos,switchPos);
-            this.boomTile(switchPos.x,switchPos.y);
+        let tile2 = this.map[targetPos.x][targetPos.y];
+        if(tile1.data.isEmpty||tile2.data.isEmpty){
+            return;
+        }
+        this.switchTileData(tapPos,targetPos);
+        if (this.isValidSwitch(tapPos, targetPos)) {
+            tile1.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex)));
+            tile2.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex)));
+            this.boomTiles(targetPos.x,targetPos.y,this.boomList);
         } else {
+            this.switchTileData(tapPos,targetPos);
             tile1.node.runAction(cc.sequence(cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex))
             , cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex))));
             tile2.node.runAction(cc.sequence(cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex))
@@ -85,75 +85,105 @@ export default class GameWorld extends cc.Component {
             this.scheduleOnce(() => { Logic.isProcessing = false }, 0.2);
         }
     }
-    switchTileData(tapPos: cc.Vec2, switchPos: cc.Vec2){
+    /** 交换数据位置 */
+    switchTileData(tapPos: cc.Vec2, targetPos: cc.Vec2){
         let tile1 = this.map[tapPos.x][tapPos.y];
-        let tile2 = this.map[switchPos.x][switchPos.y];
+        let tile2 = this.map[targetPos.x][targetPos.y];
         let pos = tile1.data.posIndex;
             tile1.data.posIndex = tile2.data.posIndex.clone();
             tile2.data.posIndex = pos.clone();
             this.map[tapPos.x][tapPos.y] = tile2;
-            this.map[switchPos.x][switchPos.y] = tile1;
+            this.map[targetPos.x][targetPos.y] = tile1;
     }
-    boomTile(x:number,y:number){
-        let tile:Tile =  this.map[x][y];
-        Logic.isProcessing = true;
-        tile.node.runAction(cc.sequence(cc.fadeOut(0.2),cc.callFunc(()=>{
-            this.fallTile(x,y);
-        })));
+    boomTiles(x:number,y:number,boomList:cc.Vec2[]){
+        // Logic.isProcessing = true;
+        for(let i = 0;i < boomList.length;i++){
+            let pos = this.boomList[i];
+            let tile =  this.map[pos.x][pos.y];
+            tile.data.isEmpty = true;
+            tile.node.runAction(cc.sequence(cc.fadeOut(0.2),cc.callFunc(()=>{
+            })));
+        }
+        this.scheduleOnce(()=>{
+            for(let i = 0;i < boomList.length;i++){
+                let pos = this.boomList[i];
+                let tile =  this.map[pos.x][pos.y];
+                tile.data.isEmpty = false;
+                this.map[x][y].initTile(TileData.getRandomTileData(x,y));
+                tile.node.runAction(cc.sequence(cc.fadeIn(0.2),cc.callFunc(()=>{
+                })));
+            }
+        },0.3)
+        for(let pos in this.fallMap){
+            // this.fallTile(this.fallMap[pos].x,this.fallMap[pos].y,this.fallMap[pos].z);
+        }
     }
-    fallTile(x:number,y:number){
-        if(y>GameWorld.HEIGHT_SIZE-1){
-            Logic.isProcessing = false;
-            return;
-        }
-        if(y==GameWorld.HEIGHT_SIZE-1){
-            let ran = Random.getRandomNum(1, 6);
-            this.map[x][y].initTile(new TileData('0' + ran, cc.v2(x, y), 'tile00' + ran));
-            this.map[x][y].node.runAction(cc.sequence(cc.fadeIn(0.1),cc.callFunc(()=>{Logic.isProcessing = false;})));
-            return;
-        }
-        let tiletop = this.map[x][y+1];
-        let tilebottom = this.map[x][y];
-        tiletop.node.runAction(cc.sequence(cc.moveTo(0.1, GameWorld.getPosInMap(tilebottom.data.posIndex)),cc.callFunc(()=>{
-            this.switchTileData(cc.v2(x,y),cc.v2(x,y+1));
-            this.fallTile(x,y+1);
-        })));
+    fallTile(x:number,y:number,z:number){
+        // if(y>GameWorld.HEIGHT_SIZE-1){
+        //     Logic.isProcessing = false;
+        //     return;
+        // }
+        // if(y==GameWorld.HEIGHT_SIZE-1){
+        //     this.map[x][y].initTile(TileData.getRandomTileData(x,y));
+        //     this.map[x][y].node.runAction(cc.sequence(cc.fadeIn(0.1),cc.callFunc(()=>{Logic.isProcessing = false;})));
+        //     return;
+        // }
+        let tiletop = this.map[x][y];
+        let tilebottom = this.map[x][y-1-z];
+        this.switchTileData(cc.v2(x,y),cc.v2(x,y-1-z));
+        tiletop.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tiletop.data.posIndex)));
         tilebottom.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tiletop.data.posIndex)));
             
     }
-    isValidSwitch(tapPos: cc.Vec2, switchPos: cc.Vec2): boolean {
-        //先交换试算
-        this.switchTileData(tapPos,switchPos);
+    isValidSwitch(tapPos: cc.Vec2, targetPos: cc.Vec2): boolean {
         this.boomList = new Array();
         let boomList1:cc.Vec2[] = new Array();
         let boomList2:cc.Vec2[] = new Array();
         let boomList3:cc.Vec2[] = new Array();
         let boomList4:cc.Vec2[] = new Array();
         boomList1 = this.findBoomTile(boomList1,tapPos.x,tapPos.y,0);
-        boomList2 = this.findBoomTile(boomList2,tapPos.x,tapPos.y,1);
-        boomList3 = this.findBoomTile(boomList3,tapPos.x,tapPos.y,2);
-        boomList4 = this.findBoomTile(boomList4,tapPos.x,tapPos.y,3);
-        let isfindx = false;
-        let isfindy = false;
-        if(boomList1.length+boomList2.length>1){
-            isfindx = true;
-        }
-        if(boomList3.length+boomList4.length>1){
-            isfindy = true;
-        }
-        if(isfindx||isfindy){
+        boomList1 = this.findBoomTile(boomList1,tapPos.x,tapPos.y,1);
+        boomList2 = this.findBoomTile(boomList2,tapPos.x,tapPos.y,2);
+        boomList2 = this.findBoomTile(boomList2,tapPos.x,tapPos.y,3);
+        boomList3 = this.findBoomTile(boomList3,targetPos.x,targetPos.y,0);
+        boomList3 = this.findBoomTile(boomList3,targetPos.x,targetPos.y,1);
+        boomList4 = this.findBoomTile(boomList4,targetPos.x,targetPos.y,2);
+        boomList4 = this.findBoomTile(boomList4,targetPos.x,targetPos.y,3);
+        let isfind1 = false;
+        let isfind2 = false;
+        if(boomList1.length>1||boomList2.length>1){
+            isfind1 = true;
             this.boomList.push(tapPos);
         }
-        if(isfindx){
-            this.boomList.concat(boomList1);
-            this.boomList.concat(boomList2);
+        if(boomList3.length>1||boomList4.length>1){
+            isfind2 = true;
+            this.boomList.push(targetPos);
         }
-        if(isfindy){
-            this.boomList.concat(boomList3);
-            this.boomList.concat(boomList4);
+        
+        if(isfind1){
+            this.boomList = this.boomList.concat(boomList1);
+            this.boomList = this.boomList.concat(boomList2);
         }
-        this.switchTileData(tapPos,switchPos);
-        return isfindx||isfindy;
+        if(isfind2){
+            this.boomList = this.boomList.concat(boomList3);
+            this.boomList = this.boomList.concat(boomList4);
+        }
+        cc.log(this.boomList);
+        this.fallMap = {};
+        for(let i = 0;i<this.boomList.length;i++){
+            let pos = this.boomList[i];
+            for(let j = pos.y;j<GameWorld.HEIGHT_SIZE;j++){
+                let fallPos = this.fallMap[`x=${pos.x}y=${j}`];
+                if(fallPos){
+                    fallPos.z+=1;
+                    this.fallMap[`x=${pos.x}y=${j}`] = fallPos;
+                }else{
+                    this.fallMap[`x=${pos.x}y=${j}`] = cc.v3(pos.x,j,0);
+                }
+            }
+        }
+        cc.log(this.fallMap);
+        return isfind1||isfind2;
     }
     findBoomTile(boomList:cc.Vec2[],x:number,y:number,dir:number):cc.Vec2[]{
         let i = x;

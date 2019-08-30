@@ -19,7 +19,7 @@ export default class Logic extends cc.Component {
     // LIFE-CYCLE CALLBACKS:
 
     onLoad() {
-        cc.game.setFrameRate(60);
+        cc.game.setFrameRate(45);
         cc.game.addPersistRootNode(this.node);
         cc.view.enableAntiAlias(false);
         // cc.director.setDisplayStats(false);
