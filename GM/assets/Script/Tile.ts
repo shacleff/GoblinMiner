@@ -30,13 +30,15 @@ export default class Tile extends cc.Component {
         this.glow = this.node.getChildByName('glow');
         this.glow.opacity = 0;
         this.node.on(cc.Node.EventType.TOUCH_START,()=>{
-            this.glow.opacity = 80;
+            if(!Logic.isPaused){
+                this.glow.opacity = 80;
+            }
         },this);
         this.node.on(cc.Node.EventType.TOUCH_END,(event:cc.Event.EventTouch)=>{
             this.glow.opacity = 0;
         },this);
         this.node.on(cc.Node.EventType.TOUCH_CANCEL,(event:cc.Event.EventTouch)=>{
-            if(Logic.isProcessing){
+            if(Logic.isProcessing||Logic.isPaused){
                 this.glow.opacity = 0;
                 return;
             }

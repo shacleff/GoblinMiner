@@ -14,6 +14,9 @@ const { ccclass, property } = cc._decorator;
 export default class Logic extends cc.Component {
     static isPaused = false;
     static isProcessing = false;
+    static score = 0;
+    static target = 10000;
+    static step = 20;
     //图片资源
     static spriteFrames: { [key: string]: cc.SpriteFrame } = null;
     // LIFE-CYCLE CALLBACKS:
@@ -36,6 +39,12 @@ export default class Logic extends cc.Component {
         // cc.PhysicsManager.DrawBits.e_centerOfMassBit |
         // cc.PhysicsManager.DrawBits.e_jointBit |
         // cc.PhysicsManager.DrawBits.e_shapeBit;
+    }
+    static reset(target:number){
+        Logic.isProcessing = false;
+        Logic.score = 0;
+        Logic.step = 20;
+        Logic.target = target;
     }
 
     start() {

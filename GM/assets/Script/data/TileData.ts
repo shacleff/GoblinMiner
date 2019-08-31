@@ -24,8 +24,8 @@ export default class TileData{
         this.resName = data.resName;
         this.isEmpty = data.isEmpty;
     }
-    static getEmptyTileData():TileData{
-        return new TileData('00',cc.v2(0,0),'tile000',true);
+    static getEmptyTileData(x:number,y:number):TileData{
+        return new TileData('00',cc.v2(x,y),'tile000',true);
     }
     static getPlayerTileData():TileData{
         return new TileData('a0',cc.v2(0,0),'player',false);

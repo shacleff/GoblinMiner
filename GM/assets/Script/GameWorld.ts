@@ -1,10 +1,7 @@
-import Player from "./Player";
 import { EventConstant } from "./EventConstant";
-import Random from "./utils/Random";
 import Logic from "./Logic";
 import TileData from "./data/TileData";
 import Tile from "./Tile";
-import FallRowData from "./data/FallRowData";
 
 // Learn TypeScript:
 //  - [Chinese] http://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -33,27 +30,27 @@ export default class GameWorld extends cc.Component {
     static WIDTH_SIZE: number = 9;
     static HEIGHT_SIZE: number = 11;
     static MAPX: number = -GameWorld.WIDTH_SIZE * GameWorld.TILE_SIZE / 2;
-    static MAPY: number = 64;
-    boomList: cc.Vec2[] = [];
-    fallMap: { [key: string]: FallRowData } = {};
-    canBoom =false;
-    canFall = false;
-    canCreate = false;
+    static MAPY: number = 128;
+    canFall = false;//是否下落
+    canFill = false;//是否填充
+    boomList:cc.Vec2[] = [];
+    speed = 0.1;
     onLoad() {
         cc.log(GameWorld.MAPX);
         cc.director.on(EventConstant.TILE_SWITCH, (event) => {
             this.tileSwitched(event.detail.tapPos, event.detail.targetPos, false);
         })
+        cc.director.on(EventConstant.INIT_MAP, (event) => {
+            this.initMap();
+        })
         this.actorLayer = this.node.getChildByName('actorlayer');
         this.actorLayer.zIndex = 2000;
-        // this.player = cc.instantiate(this.playerPrefab).getComponent(Player);
-        // this.player.node.parent = this.node;
-        // this.player.node.zIndex = 3000;
-        // this.player.node.position = GameWorld.getPosInMap(cc.v2(Math.floor(GameWorld.WIDTH_SIZE/2),GameWorld.HEIGHT_SIZE));
         this.initMap();
     }
 
     initMap() {
+        this.boomList = [];
+        this.actorLayer.removeAllChildren();
         this.map = new Array();
         for (let i = 0; i < GameWorld.WIDTH_SIZE; i++) {
             this.map[i] = new Array();
@@ -64,8 +61,8 @@ export default class GameWorld extends cc.Component {
                 this.map[i][j] = tile;
             }
         }
-        cc.log(this.showMap());
         this.checkMapValid();
+        cc.log(this.showMap());
     }
     /**检查地图有效性并重组 */
     checkMapValid() {
@@ -83,81 +80,109 @@ export default class GameWorld extends cc.Component {
         for (let i = 0; i < this.map[0].length; i++) {
             let tempstr = ''
             for (let j = 0; j < this.map.length; j++) {
-                tempstr += this.map[j][i].data.tileType + ',';
+                tempstr += this.getTileTypeString(this.map[j][i].data.tileType) + ',';
             }
             str = tempstr + '\n' + str;
         }
         return str;
     }
+    getTileTypeString(type:string){
+        switch(type){
+            case '01':return '1';
+            case '02':return '2';
+            case '03':return '3';
+            case '04':return '4';
+            case '05':return '5';
+            case '06':return '6';
+            default:return '0';
+        }
+    }
     tileSwitched(tapPos: cc.Vec2, targetPos: cc.Vec2, isFall: boolean) {
         if (targetPos.x > this.map.length - 1 || targetPos.x < 0 || targetPos.y > this.map[0].length - 1 || targetPos.y < 0) {
             return;
         }
+        if(this.canFall||this.canFill){
+            return;
+        }
         Logic.isProcessing = true;
-        let tile1 = this.map[tapPos.x][tapPos.y];
-        let tile2 = this.map[targetPos.x][targetPos.y];
-        if (tile1.data.isEmpty || tile2.data.isEmpty) {
+        if (this.map[tapPos.x][tapPos.y].data.isEmpty || this.map[targetPos.x][targetPos.y].data.isEmpty) {
             return;
         }
         this.switchTileData(tapPos, targetPos);
         let boomList = this.getBoomList();
-        if (this.boom()) {
-            tile1.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex)));
-            tile2.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex)));
+        this.boomList = boomList;
+        if (boomList.length>0) {
+            Logic.step--;
+            this.map[tapPos.x][tapPos.y].node.runAction(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(tapPos.x,tapPos.y))));
+            this.map[targetPos.x][targetPos.y].node.runAction(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(targetPos.x,targetPos.y))));
+            this.boomTiles(boomList);
         } else {
             this.switchTileData(tapPos, targetPos);
-            tile1.node.runAction(cc.sequence(cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex))
-                , cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex))));
-            tile2.node.runAction(cc.sequence(cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex))
-                , cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex))));
+            this.map[tapPos.x][tapPos.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(targetPos.x,targetPos.y)))
+                , cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(tapPos.x,tapPos.y)))));
+                this.map[targetPos.x][targetPos.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(tapPos.x,tapPos.y)))
+                , cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(targetPos.x,targetPos.y)))));
         }
-        // if (this.isValidSwitch(tapPos, targetPos)) {
-        //     tile1.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex)));
-        //     tile2.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex)));
-        //     cc.log(this.showMap());
-        //     this.boomTiles(targetPos.x, targetPos.y, this.boomList);
-        // } else {
-        //     this.switchTileData(tapPos, targetPos);
-        //     tile1.node.runAction(cc.sequence(cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex))
-        //         , cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex))));
-        //     tile2.node.runAction(cc.sequence(cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex))
-        //         , cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex))));
-        //     this.scheduleOnce(() => { Logic.isProcessing = false }, 0.2);
-        // }
     }
-    boom(): boolean {
-        let boomList = this.getBoomList();
-        if (boomList.length > 0) {
-            for (let i = 0; i < boomList.length; i++) {
-                let p = boomList[i];
-                this.map[p.x][p.y].node.runAction(cc.fadeOut(0.1));
-                this.map[p.x][p.y].data = TileData.getEmptyTileData();
+   
+    boomTiles(boomList:cc.Vec2[]){
+        let count = 0;
+        cc.log('boomList:'+boomList.length);
+        for (let i = 0; i < boomList.length; i++) {
+            Logic.score+=100;
+            if(Logic.score>=Logic.target&&Logic.step>=0){
+                cc.director.emit(EventConstant.GAME_OVER);
             }
-            this.scheduleOnce(() => {
-                let fallList = this.getFallList(boomList);
-                for (let i = 0; i < fallList.length; i++) {
-                    let p = fallList[i];
-                    this.switchTileData(cc.v2(p.x, p.y), cc.v2(p.x, p.y - p.z));
-                    this.map[p.x][p.y - p.z].node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))));
+            let p = boomList[i];
+            this.map[p.x][p.y].node.runAction(cc.sequence(cc.delayTime(this.speed),cc.callFunc(()=>{
+                this.map[p.x][p.y].data = TileData.getEmptyTileData(p.x,p.y);
+                this.map[p.x][p.y].updateTile();
+            }),cc.callFunc(()=>{
+                count++;
+                if(count == boomList.length){
+                    this.canFall = true;
                 }
-                this.scheduleOnce(() => {
-                    let emptyList = this.getEmptyList();
-                    cc.log(emptyList);
-                    for (let i = 0; i < emptyList.length; i++) {
-                        let p = emptyList[i];
-                        this.map[p.x][p.y].node.position = GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE + 1));
-                        this.map[p.x][p.y].node.runAction(cc.sequence(cc.fadeIn(0.1), cc.moveTo(0.1, GameWorld.getPosInMap(cc.v2(p.x, p.y)))));
-                        this.map[p.x][p.y].initTile(TileData.getRandomTileData(p.x, p.y));
+            })));
+        }
+    }
+    fallTiles(){
+        this.canFall = false;
+        let fallList = this.getFallList();
+        cc.log('fallList:'+fallList.length);
+        let count = 0;
+        for (let i = 0; i < fallList.length; i++) {
+            let p = fallList[i];
+            this.switchTileData(cc.v2(p.x, p.y), cc.v2(p.x, p.y - p.z));
+            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed),cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))),cc.callFunc(()=>{
+                count++;
+                if(count == fallList.length){
+                    this.canFill = true;
+                }
+            })));
+        }
+        if(fallList.length<1){
+            this.canFill = true;
+        }
+    }
+    fillTiles(){
+        this.canFill = false;
+        let emptyList = this.getEmptyList();
+        let count = 0;
+        cc.log('emptyList:'+emptyList.length);
+        for (let i = 0; i < emptyList.length; i++) {
+            let p = emptyList[i];
+            this.map[p.x][p.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE+p.y))), cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, p.y))),cc.callFunc(()=>{
+                count++;
+                if(count == emptyList.length){
+                    let boomList = this.getBoomList();
+                    this.boomList = boomList;
+                    this.boomTiles(boomList);
+                    if(boomList.length<1&&Logic.step<1){
+                        cc.director.emit(EventConstant.GAME_OVER);
                     }
-                    this.scheduleOnce(()=>{
-                        this.boom();
-                    },0.5)
-                }, 0.5);
-            }, 0.5)
-            return true;
-        } else {
-            Logic.isProcessing = false;
-            return false;
+                }
+            })));
+            this.map[p.x][p.y].initTile(TileData.getRandomTileData(p.x, p.y));
         }
     }
 
@@ -170,47 +195,6 @@ export default class GameWorld extends cc.Component {
         tile2.data.posIndex = pos.clone();
         this.map[tapPos.x][tapPos.y] = tile2;
         this.map[targetPos.x][targetPos.y] = tile1;
-    }
-    boomTiles(x: number, y: number, boomList: cc.Vec2[]) {
-        // Logic.isProcessing = true;
-        for (let i = 0; i < boomList.length; i++) {
-            let pos = this.boomList[i];
-            let tile = this.map[pos.x][pos.y];
-            tile.data.isEmpty = true;
-            tile.node.runAction(cc.sequence(cc.fadeOut(0.2), cc.callFunc(() => {
-            })));
-        }
-        for (let key in this.fallMap) {
-            let data = this.fallMap[key];
-            for (let i = data.boomPos.y; i + data.boomRowLength < GameWorld.HEIGHT_SIZE; i++) {
-                this.scheduleOnce(() => {
-                    this.fallTile(cc.v2(data.boomPos.x, i), cc.v2(data.boomPos.x, i + data.boomRowLength));
-                }, 1)
-            }
-            this.scheduleOnce(() => {
-                let count = data.boomRowLength;
-                while (count > 0) {
-                    let tile = this.map[data.boomPos.x][GameWorld.HEIGHT_SIZE - 1];
-                    tile.node.opacity = 255;
-                    tile.initTile(TileData.getRandomTileData(data.boomPos.x, GameWorld.HEIGHT_SIZE - 1));
-                    this.switchTileData(tile.data.posIndex, cc.v2(data.boomPos.x, GameWorld.HEIGHT_SIZE - count));
-                    tile.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile.data.posIndex)));
-                    count--;
-                }
-            }, 3);
-
-        }
-        cc.log(this.showMap());
-
-    }
-
-    fallTile(pos1: cc.Vec2, pos2: cc.Vec2) {
-        let tile1 = this.map[pos1.x][pos1.y];
-        let tile2 = this.map[pos2.x][pos2.y];
-        this.switchTileData(pos1, pos2);
-        tile1.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex)));
-        tile2.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex)));
-
     }
     /**获取可消除方块坐标列表 */
     getBoomList(): cc.Vec2[] {
@@ -243,33 +227,25 @@ export default class GameWorld extends cc.Component {
         return boomList;
     }
     /**获取可下落方块坐标列表 其中z代表下落格数 */
-    getFallList(boomList: cc.Vec2[]): cc.Vec3[] {
-        let fallMap: { [key: string]: cc.Vec3 } = {};
-        for (let i = 0; i < boomList.length; i++) {
-            let p = boomList[i];
+    getFallList(): cc.Vec3[] {
+        let fallList:cc.Vec3[] = new Array();
+        for (let i = 0; i < this.map.length; i++) {
             let count = 0;
-            for (let j = p.y; j < GameWorld.HEIGHT_SIZE; j++) {
-                if (this.map[p.x][j].data.isEmpty) {
-                    count++;
-                }
-            }
-            for (let j = p.y; j < GameWorld.HEIGHT_SIZE; j++) {
-                let fallPos = fallMap[`x=${p.x}y=${j}`];
-                if (fallPos) {
-                    if (fallPos.z < count) {
-                        fallMap[`x=${p.x}y=${j}`] = cc.v3(p.x, j, count);
+            let isSave = false;
+            for (let j = 0; j < this.map[0].length; j++) {
+                //由下往上查找是否有空方块，如果有计数+1，继续遍历到空方块继续+1，不是空方块且计数不为0，保存该点，继续寻找下一个
+                if (this.map[i][j].data.isEmpty) {
+                    if(isSave){
+                        isSave = false;
+                        count = 0;
                     }
-                } else {
-                    fallMap[`x=${p.x}y=${j}`] = cc.v3(p.x, j, 1);
+                    count++;
+                }else{
+                    if(count>0){
+                        isSave = true;
+                        fallList.push(cc.v3(i, j, count));
+                    }
                 }
-            }
-
-        }
-        let fallList = new Array();
-        for (let k in fallMap) {
-            let pos = fallMap[k];
-            if (!this.map[pos.x][pos.y].data.isEmpty) {
-                fallList.push(pos);
             }
         }
         return fallList;
@@ -286,66 +262,7 @@ export default class GameWorld extends cc.Component {
         }
         return emptyList;
     }
-    isValidSwitch(tapPos: cc.Vec2, targetPos: cc.Vec2): boolean {
-        this.boomList = new Array();
-        let boomList1: cc.Vec2[] = new Array();
-        let boomList2: cc.Vec2[] = new Array();
-        let boomList3: cc.Vec2[] = new Array();
-        let boomList4: cc.Vec2[] = new Array();
-        boomList1 = this.findBoomTile(boomList1, tapPos.x, tapPos.y, 0);
-        boomList1 = this.findBoomTile(boomList1, tapPos.x, tapPos.y, 1);
-        boomList2 = this.findBoomTile(boomList2, tapPos.x, tapPos.y, 2);
-        boomList2 = this.findBoomTile(boomList2, tapPos.x, tapPos.y, 3);
-        boomList3 = this.findBoomTile(boomList3, targetPos.x, targetPos.y, 0);
-        boomList3 = this.findBoomTile(boomList3, targetPos.x, targetPos.y, 1);
-        boomList4 = this.findBoomTile(boomList4, targetPos.x, targetPos.y, 2);
-        boomList4 = this.findBoomTile(boomList4, targetPos.x, targetPos.y, 3);
-        let isfind1 = false;
-        let isfind2 = false;
-        if (boomList1.length > 1 || boomList2.length > 1) {
-            isfind1 = true;
-            this.boomList.push(tapPos);
-        }
-        if (boomList3.length > 1 || boomList4.length > 1) {
-            isfind2 = true;
-            this.boomList.push(targetPos);
-        }
-
-        if (isfind1) {
-            this.boomList = this.boomList.concat(boomList1);
-            this.boomList = this.boomList.concat(boomList2);
-        }
-        if (isfind2) {
-            this.boomList = this.boomList.concat(boomList3);
-            this.boomList = this.boomList.concat(boomList4);
-        }
-        cc.log(this.boomList);
-        this.fallMap = {};
-        for (let i = 0; i < this.boomList.length; i++) {
-            let pos = this.boomList[i];
-            this.map[pos.x][pos.y].data.isEmpty = true;
-        }
-        for (let i = 0; i < this.boomList.length; i++) {
-            let pos = this.boomList[i];
-            let count = 0;
-            for (let j = pos.y; j < GameWorld.HEIGHT_SIZE; j++) {
-                if (this.map[pos.x][j].data.isEmpty) {
-                    count++;
-                }
-            }
-            let fallData = this.fallMap[`x=${pos.x}`];
-            if (fallData) {
-                if (fallData.boomRowLength < count) {
-                    this.fallMap[`x=${pos.x}`].boomRowLength = count;
-                    this.fallMap[`x=${pos.x}`].boomPos = pos;
-                }
-            } else {
-                this.fallMap[`x=${pos.x}`] = new FallRowData(pos, 1);
-            }
-        }
-        cc.log(this.fallMap);
-        return isfind1 || isfind2;
-    }
+    /**查找指定方向的相同方块 */
     findBoomTile(boomList: cc.Vec2[], x: number, y: number, dir: number): cc.Vec2[] {
         let i = x;
         let j = y;
@@ -362,6 +279,7 @@ export default class GameWorld extends cc.Component {
             return boomList;
         }
     }
+    /**方块是否相同，空白方块忽略 */
     isTypeEqual(pos1: cc.Vec2, pos2: cc.Vec2): boolean {
         if (pos1.x > this.map.length - 1 || pos1.x < 0 || pos1.y > this.map[0].length - 1 || pos1.y < 0) {
             return false;
@@ -394,7 +312,13 @@ export default class GameWorld extends cc.Component {
 
     update(dt) {
         if(this.isTimeDelay(dt)){
-
+            if(this.canFall){
+                this.fallTiles();
+            }
+            if(this.canFill){
+                this.fillTiles();
+            }
+            Logic.isProcessing = this.boomList.length>0;
         }
     }
 

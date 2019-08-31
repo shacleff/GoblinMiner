@@ -11,7 +11,7 @@ export class EventConstant extends cc.Component{
     public static readonly GAME_START = 'GAME_START';
     public static readonly PLAY_AUDIO = 'PLAY_AUDIO';
 
-    public static readonly TILE_CLICK = 'TILE_CLICK';
+    public static readonly INIT_MAP = 'INIT_MAP';
     public static readonly TILE_SWITCH = 'TILE_SWITCH';
     
     public static eventHandler:cc.Node = new cc.Node();
