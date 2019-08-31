@@ -4,6 +4,7 @@ import Random from "./utils/Random";
 import Logic from "./Logic";
 import TileData from "./data/TileData";
 import Tile from "./Tile";
+import FallRowData from "./data/FallRowData";
 
 // Learn TypeScript:
 //  - [Chinese] http://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -33,12 +34,12 @@ export default class GameWorld extends cc.Component {
     static HEIGHT_SIZE: number = 11;
     static MAPX: number = -GameWorld.WIDTH_SIZE * GameWorld.TILE_SIZE / 2;
     static MAPY: number = 64;
-    boomList:cc.Vec2[] = [];
-    fallMap: { [key: string]: cc.Vec3 } = {};
+    boomList: cc.Vec2[] = [];
+    fallMap: { [key: string]: FallRowData } = {};
     onLoad() {
         cc.log(GameWorld.MAPX);
         cc.director.on(EventConstant.TILE_SWITCH, (event) => {
-            this.tileSwitched(event.detail.tapPos, event.detail.targetPos,false);
+            this.tileSwitched(event.detail.tapPos, event.detail.targetPos, false);
         })
         this.actorLayer = this.node.getChildByName('actorlayer');
         this.actorLayer.zIndex = 2000;
@@ -55,149 +56,172 @@ export default class GameWorld extends cc.Component {
             this.map[i] = new Array();
             for (let j = 0; j < GameWorld.HEIGHT_SIZE; j++) {
                 let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
-                tile.initTile(TileData.getRandomTileData(i,j));
+                tile.initTile(TileData.getRandomTileData(i, j));
                 this.actorLayer.addChild(tile.node);
                 this.map[i][j] = tile;
             }
         }
+        cc.log(this.showMap());
     }
-   
-    tileSwitched(tapPos: cc.Vec2, targetPos: cc.Vec2,isFall:boolean) {
+    showMap():string{
+        let str = '';
+        for (let i = 0; i < this.map[0].length; i++) {
+            let tempstr = ''
+            for (let j = 0; j < this.map.length; j++) {
+                tempstr+=this.map[j][i].data.tileType+',';
+            }
+            str=tempstr+'\n'+str;
+        }
+        return str;
+    }
+    tileSwitched(tapPos: cc.Vec2, targetPos: cc.Vec2, isFall: boolean) {
         if (targetPos.x > this.map.length - 1 || targetPos.x < 0 || targetPos.y > this.map[0].length - 1 || targetPos.y < 0) {
             return;
         }
         let tile1 = this.map[tapPos.x][tapPos.y];
         let tile2 = this.map[targetPos.x][targetPos.y];
-        if(tile1.data.isEmpty||tile2.data.isEmpty){
+        if (tile1.data.isEmpty || tile2.data.isEmpty) {
             return;
         }
-        this.switchTileData(tapPos,targetPos);
+        this.switchTileData(tapPos, targetPos);
         if (this.isValidSwitch(tapPos, targetPos)) {
             tile1.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex)));
             tile2.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex)));
-            this.boomTiles(targetPos.x,targetPos.y,this.boomList);
+            cc.log(this.showMap());
+            this.boomTiles(targetPos.x, targetPos.y, this.boomList);
         } else {
-            this.switchTileData(tapPos,targetPos);
+            this.switchTileData(tapPos, targetPos);
             tile1.node.runAction(cc.sequence(cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex))
-            , cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex))));
+                , cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex))));
             tile2.node.runAction(cc.sequence(cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex))
-            , cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex))));
+                , cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex))));
             this.scheduleOnce(() => { Logic.isProcessing = false }, 0.2);
         }
     }
     /** 交换数据位置 */
-    switchTileData(tapPos: cc.Vec2, targetPos: cc.Vec2){
+    switchTileData(tapPos: cc.Vec2, targetPos: cc.Vec2) {
         let tile1 = this.map[tapPos.x][tapPos.y];
         let tile2 = this.map[targetPos.x][targetPos.y];
         let pos = tile1.data.posIndex;
-            tile1.data.posIndex = tile2.data.posIndex.clone();
-            tile2.data.posIndex = pos.clone();
-            this.map[tapPos.x][tapPos.y] = tile2;
-            this.map[targetPos.x][targetPos.y] = tile1;
+        tile1.data.posIndex = tile2.data.posIndex.clone();
+        tile2.data.posIndex = pos.clone();
+        this.map[tapPos.x][tapPos.y] = tile2;
+        this.map[targetPos.x][targetPos.y] = tile1;
     }
-    boomTiles(x:number,y:number,boomList:cc.Vec2[]){
+    boomTiles(x: number, y: number, boomList: cc.Vec2[]) {
         // Logic.isProcessing = true;
-        for(let i = 0;i < boomList.length;i++){
+        for (let i = 0; i < boomList.length; i++) {
             let pos = this.boomList[i];
-            let tile =  this.map[pos.x][pos.y];
+            let tile = this.map[pos.x][pos.y];
             tile.data.isEmpty = true;
-            tile.node.runAction(cc.sequence(cc.fadeOut(0.2),cc.callFunc(()=>{
+            tile.node.runAction(cc.sequence(cc.fadeOut(0.2), cc.callFunc(() => {
             })));
         }
-        this.scheduleOnce(()=>{
-            for(let i = 0;i < boomList.length;i++){
-                let pos = this.boomList[i];
-                let tile =  this.map[pos.x][pos.y];
-                tile.data.isEmpty = false;
-                this.map[x][y].initTile(TileData.getRandomTileData(x,y));
-                tile.node.runAction(cc.sequence(cc.fadeIn(0.2),cc.callFunc(()=>{
-                })));
+        for (let key in this.fallMap) {
+            let data = this.fallMap[key];
+            for (let i = data.boomPos.y; i + data.boomRowLength < GameWorld.HEIGHT_SIZE; i++) {
+                this.scheduleOnce(()=>{
+                    this.fallTile(cc.v2(data.boomPos.x, i), cc.v2(data.boomPos.x, i + data.boomRowLength));
+                },1)
             }
-        },0.3)
-        for(let pos in this.fallMap){
-            // this.fallTile(this.fallMap[pos].x,this.fallMap[pos].y,this.fallMap[pos].z);
+            this.scheduleOnce(()=>{
+                let count = data.boomRowLength;
+                while(count>0){
+                    let tile = this.map[data.boomPos.x][GameWorld.HEIGHT_SIZE - 1];
+                    tile.node.opacity = 255;
+                    tile.initTile(TileData.getRandomTileData(data.boomPos.x, GameWorld.HEIGHT_SIZE - 1));
+                    this.switchTileData(tile.data.posIndex,cc.v2(data.boomPos.x,GameWorld.HEIGHT_SIZE-count));
+                    tile.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile.data.posIndex)));
+                    count--;
+                }
+            },3);
+
         }
+        cc.log(this.showMap());
+
     }
-    fallTile(x:number,y:number,z:number){
-        // if(y>GameWorld.HEIGHT_SIZE-1){
-        //     Logic.isProcessing = false;
-        //     return;
-        // }
-        // if(y==GameWorld.HEIGHT_SIZE-1){
-        //     this.map[x][y].initTile(TileData.getRandomTileData(x,y));
-        //     this.map[x][y].node.runAction(cc.sequence(cc.fadeIn(0.1),cc.callFunc(()=>{Logic.isProcessing = false;})));
-        //     return;
-        // }
-        let tiletop = this.map[x][y];
-        let tilebottom = this.map[x][y-1-z];
-        this.switchTileData(cc.v2(x,y),cc.v2(x,y-1-z));
-        tiletop.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tiletop.data.posIndex)));
-        tilebottom.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tiletop.data.posIndex)));
-            
+
+    fallTile(pos1: cc.Vec2, pos2: cc.Vec2) {
+        let tile1= this.map[pos1.x][pos1.y];
+        let tile2 = this.map[pos2.x][pos2.y];
+        this.switchTileData(pos1, pos2);
+        tile1.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile1.data.posIndex)));
+        tile2.node.runAction(cc.moveTo(0.1, GameWorld.getPosInMap(tile2.data.posIndex)));
+
     }
     isValidSwitch(tapPos: cc.Vec2, targetPos: cc.Vec2): boolean {
         this.boomList = new Array();
-        let boomList1:cc.Vec2[] = new Array();
-        let boomList2:cc.Vec2[] = new Array();
-        let boomList3:cc.Vec2[] = new Array();
-        let boomList4:cc.Vec2[] = new Array();
-        boomList1 = this.findBoomTile(boomList1,tapPos.x,tapPos.y,0);
-        boomList1 = this.findBoomTile(boomList1,tapPos.x,tapPos.y,1);
-        boomList2 = this.findBoomTile(boomList2,tapPos.x,tapPos.y,2);
-        boomList2 = this.findBoomTile(boomList2,tapPos.x,tapPos.y,3);
-        boomList3 = this.findBoomTile(boomList3,targetPos.x,targetPos.y,0);
-        boomList3 = this.findBoomTile(boomList3,targetPos.x,targetPos.y,1);
-        boomList4 = this.findBoomTile(boomList4,targetPos.x,targetPos.y,2);
-        boomList4 = this.findBoomTile(boomList4,targetPos.x,targetPos.y,3);
+        let boomList1: cc.Vec2[] = new Array();
+        let boomList2: cc.Vec2[] = new Array();
+        let boomList3: cc.Vec2[] = new Array();
+        let boomList4: cc.Vec2[] = new Array();
+        boomList1 = this.findBoomTile(boomList1, tapPos.x, tapPos.y, 0);
+        boomList1 = this.findBoomTile(boomList1, tapPos.x, tapPos.y, 1);
+        boomList2 = this.findBoomTile(boomList2, tapPos.x, tapPos.y, 2);
+        boomList2 = this.findBoomTile(boomList2, tapPos.x, tapPos.y, 3);
+        boomList3 = this.findBoomTile(boomList3, targetPos.x, targetPos.y, 0);
+        boomList3 = this.findBoomTile(boomList3, targetPos.x, targetPos.y, 1);
+        boomList4 = this.findBoomTile(boomList4, targetPos.x, targetPos.y, 2);
+        boomList4 = this.findBoomTile(boomList4, targetPos.x, targetPos.y, 3);
         let isfind1 = false;
         let isfind2 = false;
-        if(boomList1.length>1||boomList2.length>1){
+        if (boomList1.length > 1 || boomList2.length > 1) {
             isfind1 = true;
             this.boomList.push(tapPos);
         }
-        if(boomList3.length>1||boomList4.length>1){
+        if (boomList3.length > 1 || boomList4.length > 1) {
             isfind2 = true;
             this.boomList.push(targetPos);
         }
-        
-        if(isfind1){
+
+        if (isfind1) {
             this.boomList = this.boomList.concat(boomList1);
             this.boomList = this.boomList.concat(boomList2);
         }
-        if(isfind2){
+        if (isfind2) {
             this.boomList = this.boomList.concat(boomList3);
             this.boomList = this.boomList.concat(boomList4);
         }
         cc.log(this.boomList);
         this.fallMap = {};
-        for(let i = 0;i<this.boomList.length;i++){
+        for (let i = 0; i < this.boomList.length; i++) {
             let pos = this.boomList[i];
-            for(let j = pos.y;j<GameWorld.HEIGHT_SIZE;j++){
-                let fallPos = this.fallMap[`x=${pos.x}y=${j}`];
-                if(fallPos){
-                    fallPos.z+=1;
-                    this.fallMap[`x=${pos.x}y=${j}`] = fallPos;
-                }else{
-                    this.fallMap[`x=${pos.x}y=${j}`] = cc.v3(pos.x,j,0);
+            this.map[pos.x][pos.y].data.isEmpty = true;
+        }
+        for (let i = 0; i < this.boomList.length; i++) {
+            let pos = this.boomList[i];
+            let count = 0;
+            for (let j = pos.y; j < GameWorld.HEIGHT_SIZE; j++) {
+                if (this.map[pos.x][j].data.isEmpty) {
+                    count++;
                 }
+            }
+            let fallData = this.fallMap[`x=${pos.x}`];
+            if (fallData) {
+                if(fallData.boomRowLength < count){
+                    this.fallMap[`x=${pos.x}`].boomRowLength = count;
+                    this.fallMap[`x=${pos.x}`].boomPos = pos;
+                }
+            } else {
+                this.fallMap[`x=${pos.x}`] = new FallRowData(pos, 1);
             }
         }
         cc.log(this.fallMap);
-        return isfind1||isfind2;
+        return isfind1 || isfind2;
     }
-    findBoomTile(boomList:cc.Vec2[],x:number,y:number,dir:number):cc.Vec2[]{
+    findBoomTile(boomList: cc.Vec2[], x: number, y: number, dir: number): cc.Vec2[] {
         let i = x;
         let j = y;
-        switch(dir){
-            case 0:j = y+1;break;
-            case 1:j = y-1;break;
-            case 2:i = x-1;break;
-            case 3:i = x+1;break;
+        switch (dir) {
+            case 0: j = y + 1; break;
+            case 1: j = y - 1; break;
+            case 2: i = x - 1; break;
+            case 3: i = x + 1; break;
         }
-        if(this.isTypeEqual(cc.v2(x,y),cc.v2(i,j))){
-            boomList.push(cc.v2(i,j));
-            return this.findBoomTile(boomList,i,j,dir);
-        }else{
+        if (this.isTypeEqual(cc.v2(x, y), cc.v2(i, j))) {
+            boomList.push(cc.v2(i, j));
+            return this.findBoomTile(boomList, i, j, dir);
+        } else {
             return boomList;
         }
     }
