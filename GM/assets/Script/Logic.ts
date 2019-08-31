@@ -40,10 +40,10 @@ export default class Logic extends cc.Component {
         // cc.PhysicsManager.DrawBits.e_jointBit |
         // cc.PhysicsManager.DrawBits.e_shapeBit;
     }
-    static reset(target:number){
+    static reset(target:number,step:number){
         Logic.isProcessing = false;
         Logic.score = 0;
-        Logic.step = 20;
+        Logic.step = step;
         Logic.target = target;
     }
 

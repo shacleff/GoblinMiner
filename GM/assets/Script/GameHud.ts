@@ -38,9 +38,9 @@ export default class NewClass extends cc.Component {
         Logic.isPaused = false;
         cc.director.emit(EventConstant.INIT_MAP);
         if(Logic.target<=Logic.score){
-            Logic.reset(Logic.target+5000);
+            Logic.reset(Logic.target+5000,Logic.target+5);
         }else{
-            Logic.reset(Logic.target);
+            Logic.reset(Logic.target,Logic.target);
         }
     }
     gameOver(){
