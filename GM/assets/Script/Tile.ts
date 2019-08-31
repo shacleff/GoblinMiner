@@ -36,10 +36,10 @@ export default class Tile extends cc.Component {
             this.glow.opacity = 0;
         },this);
         this.node.on(cc.Node.EventType.TOUCH_CANCEL,(event:cc.Event.EventTouch)=>{
-            // if(Logic.isProcessing){
-            //     this.glow.opacity = 0;
-            //     return;
-            // }
+            if(Logic.isProcessing){
+                this.glow.opacity = 0;
+                return;
+            }
             let end = this.node.convertToNodeSpace(event.getLocation());
             let pos = this.data.posIndex.clone();
             if(Utils.getDistance(cc.v2(0,0),end)<32){
