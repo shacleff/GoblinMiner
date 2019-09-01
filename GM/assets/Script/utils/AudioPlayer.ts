@@ -18,13 +18,14 @@ export default class AudioPlayer extends cc.Component {
 
     public static readonly PLAYER_UPGRADE = 'PLAYER_UPGRADE';
     public static readonly GAME_OVER = 'GAME_OVER';
-    public static readonly PLAYER_HIT = 'PLAYER_HIT';
+    public static readonly FALL_TILE = 'FALL_TILE';
+    public static readonly BOOM_TILE = 'BOOM_TILE';
     public static readonly STOP_BG = 'STOP_BG';
     public static readonly PLAY_BG = 'PLAY_BG';
     @property({ type: cc.AudioClip })
-    hit: cc.AudioClip = null;
+    boom: cc.AudioClip = null;
     @property({ type: cc.AudioClip })
-    upgrade: cc.AudioClip = null;
+    fall: cc.AudioClip = null;
     @property({ type: cc.AudioClip })
     over: cc.AudioClip = null;
     @property({ type: cc.AudioClip })
@@ -45,14 +46,14 @@ export default class AudioPlayer extends cc.Component {
     }
     play(name: string) {
         switch (name) {
-            case AudioPlayer.PLAYER_UPGRADE:
-                cc.audioEngine.playEffect(this.upgrade, false);
+            case AudioPlayer.FALL_TILE:
+                cc.audioEngine.playEffect(this.fall, false);
                 break;
             case AudioPlayer.GAME_OVER:
                 cc.audioEngine.playEffect(this.over, false);
                 break;
-            case AudioPlayer.PLAYER_HIT:
-                cc.audioEngine.playEffect(this.hit, false);
+            case AudioPlayer.BOOM_TILE:
+                cc.audioEngine.playEffect(this.boom, false);
                 break;
             
             case AudioPlayer.STOP_BG:

@@ -60,18 +60,26 @@ export default class Tile extends cc.Component {
 
     initTile(data:TileData){
         this.data =data;
-        if(!this.sprite){
-            this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
-        }
-        this.sprite.spriteFrame = Logic.spriteFrames[data.resName];
+        this.changeRes();
         this.node.position = GameWorld.getPosInMap(data.posIndex);
     }
     updateTile(){
+        this.changeRes();
+        this.node.position = GameWorld.getPosInMap(this.data.posIndex);
+    }
+    changeRes(){
         if(!this.sprite){
             this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
         }
-        this.sprite.spriteFrame = Logic.spriteFrames[this.data.resName];
-        this.node.position = GameWorld.getPosInMap(this.data.posIndex);
+        let suffix = '';
+        switch(this.data.tileSpecial){
+            case 0:suffix='';break;
+            case 1:suffix='four1';break;
+            case 2:suffix='four2';break;
+            case 3:suffix='cross';break;
+            case 4:suffix='five';break;
+        }
+        this.sprite.spriteFrame = Logic.spriteFrames[this.data.resName+suffix];
     }
     start () {
 

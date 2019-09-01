@@ -90,7 +90,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 720,
-      "height": 1280
+      "height": 1200
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -100,7 +100,7 @@
     "_position": {
       "__type__": "cc.Vec3",
       "x": 360,
-      "y": 640,
+      "y": 600,
       "z": 0
     },
     "_scale": {
@@ -159,7 +159,7 @@
       "__type__": "cc.Vec3",
       "x": 0,
       "y": 0,
-      "z": 230.3627574066607
+      "z": 357.6684917629732
     },
     "_scale": {
       "__type__": "cc.Vec3",
@@ -244,7 +244,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 720,
-      "height": 1280
+      "height": 1200
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -360,8 +360,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 230.01,
-      "height": 75.6
+      "width": 233.34,
+      "height": 50.4
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -406,10 +406,10 @@
       }
     ],
     "_useOriginalSize": false,
-    "_string": "加载中...",
-    "_N$string": "加载中...",
-    "_fontSize": 60,
-    "_lineHeight": 60,
+    "_string": "矿工祈祷中...",
+    "_N$string": "矿工祈祷中...",
+    "_fontSize": 40,
+    "_lineHeight": 40,
     "_enableWrapText": true,
     "_N$file": null,
     "_isSystemFontUsed": true,
@@ -433,7 +433,7 @@
     "_designResolution": {
       "__type__": "cc.Size",
       "width": 720,
-      "height": 1280
+      "height": 1200
     },
     "_fitWidth": true,
     "_fitHeight": true,

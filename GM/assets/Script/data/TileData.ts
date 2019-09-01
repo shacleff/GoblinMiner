@@ -1,10 +1,10 @@
 import Random from "../utils/Random";
 
 export default class TileData{
-    
     tileType = '00';
     resName = 'tile000';
     posIndex:cc.Vec2 = cc.v2(0,0);
+    tileSpecial = 0;//0普通 1橫四连 2竖四连 3十字连 4五连
     isEmpty = false;
     constructor(tileType:string,pos:cc.Vec2,resName:string,isEmpty:boolean){
         this.tileType = tileType;

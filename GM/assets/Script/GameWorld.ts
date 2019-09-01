@@ -2,6 +2,7 @@ import { EventConstant } from "./EventConstant";
 import Logic from "./Logic";
 import TileData from "./data/TileData";
 import Tile from "./Tile";
+import AudioPlayer from "./utils/AudioPlayer";
 
 // Learn TypeScript:
 //  - [Chinese] http://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -33,7 +34,7 @@ export default class GameWorld extends cc.Component {
     static MAPY: number = 128;
     canFall = false;//是否下落
     canFill = false;//是否填充
-    boomList:cc.Vec2[] = [];
+    boomList:cc.Vec3[] = [];
     speed = 0.1;
     onLoad() {
         cc.log(GameWorld.MAPX);
@@ -125,18 +126,41 @@ export default class GameWorld extends cc.Component {
         }
     }
    
-    boomTiles(boomList:cc.Vec2[]){
+    boomTiles(boomList:cc.Vec3[]){
         let count = 0;
-        cc.log('boomList:'+boomList.length);
+        if(boomList.length>0){
+            cc.director.emit(EventConstant.PLAY_AUDIO,{detail:{name:AudioPlayer.BOOM_TILE}});
+        }
         for (let i = 0; i < boomList.length; i++) {
             Logic.score+=100;
             if(Logic.score>=Logic.target&&Logic.step>=0){
-                cc.director.emit(EventConstant.GAME_OVER);
+                cc.director.emit(EventConstant.GAME_OVER,{detail:{over:false}});
             }
+            let offset = 10;
+            let speed = 0.1;
             let p = boomList[i];
-            this.map[p.x][p.y].node.runAction(cc.sequence(cc.delayTime(this.speed),cc.callFunc(()=>{
+            this.map[p.x][p.y].node.runAction(cc.sequence(
+                cc.moveBy(speed,0,offset)
+                ,cc.moveBy(speed,0,-offset)
+                ,cc.moveBy(speed,0,offset)
+                ,cc.moveBy(speed,0,-offset)
+                ,cc.moveBy(speed/2,offset,0)
+                ,cc.moveBy(speed/2,-offset,0)
+                ,cc.moveBy(speed/2,offset,0)
+                ,cc.moveBy(speed/2,-offset,0)
+            ,cc.fadeOut(this.speed)
+            ,cc.callFunc(()=>{
+                this.map[p.x][p.y].node.opacity = 0;
                 this.map[p.x][p.y].data = TileData.getEmptyTileData(p.x,p.y);
-                this.map[p.x][p.y].updateTile();
+                // if(p.z>0){
+                //     this.map[p.x][p.y].data.tileSpecial = p.z;
+                //     this.map[p.x][p.y].node.opacity = 255;
+                //     this.map[p.x][p.y].updateTile();
+                //     cc.log(p);
+                // }else{
+                //     this.map[p.x][p.y].node.opacity = 0;
+                //     this.map[p.x][p.y].data = TileData.getEmptyTileData(p.x,p.y);
+                // }
             }),cc.callFunc(()=>{
                 count++;
                 if(count == boomList.length){
@@ -148,12 +172,14 @@ export default class GameWorld extends cc.Component {
     fallTiles(){
         this.canFall = false;
         let fallList = this.getFallList();
-        cc.log('fallList:'+fallList.length);
+        if(fallList.length>0){
+            cc.director.emit(EventConstant.PLAY_AUDIO,{detail:{name:AudioPlayer.FALL_TILE}});
+        }
         let count = 0;
         for (let i = 0; i < fallList.length; i++) {
             let p = fallList[i];
             this.switchTileData(cc.v2(p.x, p.y), cc.v2(p.x, p.y - p.z));
-            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed),cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))),cc.callFunc(()=>{
+            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed),cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()),cc.callFunc(()=>{
                 count++;
                 if(count == fallList.length){
                     this.canFill = true;
@@ -168,17 +194,16 @@ export default class GameWorld extends cc.Component {
         this.canFill = false;
         let emptyList = this.getEmptyList();
         let count = 0;
-        cc.log('emptyList:'+emptyList.length);
         for (let i = 0; i < emptyList.length; i++) {
             let p = emptyList[i];
-            this.map[p.x][p.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE+p.y))), cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, p.y))),cc.callFunc(()=>{
+            this.map[p.x][p.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE+p.y))),cc.fadeIn(this.speed), cc.moveTo(this.speed*2, GameWorld.getPosInMap(cc.v2(p.x, p.y))).easing(cc.easeBackIn()),cc.callFunc(()=>{
                 count++;
                 if(count == emptyList.length){
                     let boomList = this.getBoomList();
                     this.boomList = boomList;
                     this.boomTiles(boomList);
                     if(boomList.length<1&&Logic.step<1){
-                        cc.director.emit(EventConstant.GAME_OVER);
+                        cc.director.emit(EventConstant.GAME_OVER,{detail:{over:true}});
                     }
                 }
             })));
@@ -197,34 +222,65 @@ export default class GameWorld extends cc.Component {
         this.map[targetPos.x][targetPos.y] = tile1;
     }
     /**获取可消除方块坐标列表 */
-    getBoomList(): cc.Vec2[] {
-        let boomMap: { [key: string]: cc.Vec2 } = {};
+    getBoomList(): cc.Vec3[] {
+        let boomMap: { [key: string]: cc.Vec3 } = {};
         for (let i = 0; i < this.map.length; i++) {
             for (let j = 0; j < this.map[0].length; j++) {
-                let boomList1: cc.Vec2[] = new Array();
+                let boomList1: cc.Vec3[] = new Array();
                 boomList1 = this.findBoomTile(boomList1, i, j, 0);
                 boomList1 = this.findBoomTile(boomList1, i, j, 1);
-                let boomList2: cc.Vec2[] = new Array();
+                let boomList2: cc.Vec3[] = new Array();
                 boomList2 = this.findBoomTile(boomList2, i, j, 2);
                 boomList2 = this.findBoomTile(boomList2, i, j, 3);
                 if (boomList1.length > 1) {
                     for (let p of boomList1) {
-                        boomMap[`x=${p.x}y=${p.y}`] = p;
+                        boomMap = this.setBoomMapData(boomMap,p);
                     }
+                    boomMap = this.setBoomMapData(boomMap,cc.v3(i,j,0));
                 }
                 if (boomList2.length > 1) {
                     for (let p of boomList2) {
-                        boomMap[`x=${p.x}y=${p.y}`] = p;
+                        boomMap = this.setBoomMapData(boomMap,p);
                     }
+                    boomMap = this.setBoomMapData(boomMap,cc.v3(i,j,0));
                 }
+                // //设置横竖特殊
+                // if(boomList1.length>2){
+                //     boomMap = this.setBoomMapData(boomMap,cc.v3(i,j,2));
+                //     cc.log('four2')
+                // }
+                // if(boomList2.length>2){
+                //     boomMap = this.setBoomMapData(boomMap,cc.v3(i,j,1));
+                //     cc.log('four1')
+                // }
+                // //设置交叉特殊
+                // if(boomList1.length>1&&boomList2.length>1){
+                //     boomMap = this.setBoomMapData(boomMap,cc.v3(i,j,3));
+                //     cc.log('cross')
+                // }
+                // //设置五连
+                // if(boomList1.length>3||boomList2.length>3){
+                //     boomMap = this.setBoomMapData(boomMap,cc.v3(i,j,4));
+                //     cc.log('five')
+                // }
             }
         }
-        let boomList = new Array();
+        let boomList:cc.Vec3[] = new Array();
         for (let k in boomMap) {
             let pos = boomMap[k];
             boomList.push(pos);
         }
         return boomList;
+    }
+    setBoomMapData(boomMap: { [key: string]: cc.Vec3 },p:cc.Vec3): { [key: string]: cc.Vec3 }{
+        if(boomMap[`x=${p.x}y=${p.y}`]){
+            if(boomMap[`x=${p.x}y=${p.y}`].z<=p.z){
+                boomMap[`x=${p.x}y=${p.x}`] = p.clone();
+            }
+        }else{
+            boomMap[`x=${p.x}y=${p.y}`] = p.clone();
+        }
+        return boomMap;
     }
     /**获取可下落方块坐标列表 其中z代表下落格数 */
     getFallList(): cc.Vec3[] {
@@ -263,7 +319,7 @@ export default class GameWorld extends cc.Component {
         return emptyList;
     }
     /**查找指定方向的相同方块 */
-    findBoomTile(boomList: cc.Vec2[], x: number, y: number, dir: number): cc.Vec2[] {
+    findBoomTile(boomList: cc.Vec3[], x: number, y: number, dir: number): cc.Vec3[] {
         let i = x;
         let j = y;
         switch (dir) {
@@ -273,7 +329,7 @@ export default class GameWorld extends cc.Component {
             case 3: i = x + 1; break;
         }
         if (this.isTypeEqual(cc.v2(x, y), cc.v2(i, j))) {
-            boomList.push(cc.v2(i, j));
+            boomList.push(cc.v3(i, j,0));
             return this.findBoomTile(boomList, i, j, dir);
         } else {
             return boomList;
