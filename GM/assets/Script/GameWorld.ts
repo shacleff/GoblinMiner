@@ -3,6 +3,7 @@ import Logic from "./Logic";
 import TileData from "./data/TileData";
 import Tile from "./Tile";
 import AudioPlayer from "./utils/AudioPlayer";
+import BoomData from "./data/BoomData";
 
 // Learn TypeScript:
 //  - [Chinese] http://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -34,7 +35,7 @@ export default class GameWorld extends cc.Component {
     static MAPY: number = 128;
     canFall = false;//是否下落
     canFill = false;//是否填充
-    boomList:cc.Vec3[] = [];
+    boomList: BoomData[] = [];
     speed = 0.1;
     onLoad() {
         cc.log(GameWorld.MAPX);
@@ -87,22 +88,22 @@ export default class GameWorld extends cc.Component {
         }
         return str;
     }
-    getTileTypeString(type:string){
-        switch(type){
-            case '01':return '1';
-            case '02':return '2';
-            case '03':return '3';
-            case '04':return '4';
-            case '05':return '5';
-            case '06':return '6';
-            default:return '0';
+    getTileTypeString(type: string) {
+        switch (type) {
+            case '01': return '1';
+            case '02': return '2';
+            case '03': return '3';
+            case '04': return '4';
+            case '05': return '5';
+            case '06': return '6';
+            default: return '0';
         }
     }
     tileSwitched(tapPos: cc.Vec2, targetPos: cc.Vec2, isFall: boolean) {
         if (targetPos.x > this.map.length - 1 || targetPos.x < 0 || targetPos.y > this.map[0].length - 1 || targetPos.y < 0) {
             return;
         }
-        if(this.canFall||this.canFill){
+        if (this.canFall || this.canFill) {
             return;
         }
         Logic.isProcessing = true;
@@ -112,98 +113,105 @@ export default class GameWorld extends cc.Component {
         this.switchTileData(tapPos, targetPos);
         let boomList = this.getBoomList();
         this.boomList = boomList;
-        if (boomList.length>0) {
+        if (boomList.length > 0) {
             Logic.step--;
-            this.map[tapPos.x][tapPos.y].node.runAction(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(tapPos.x,tapPos.y))));
-            this.map[targetPos.x][targetPos.y].node.runAction(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(targetPos.x,targetPos.y))));
+            this.map[tapPos.x][tapPos.y].node.runAction(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(tapPos.x, tapPos.y))));
+            this.map[targetPos.x][targetPos.y].node.runAction(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(targetPos.x, targetPos.y))));
             this.boomTiles(boomList);
         } else {
             this.switchTileData(tapPos, targetPos);
-            this.map[tapPos.x][tapPos.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(targetPos.x,targetPos.y)))
-                , cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(tapPos.x,tapPos.y)))));
-                this.map[targetPos.x][targetPos.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(tapPos.x,tapPos.y)))
-                , cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(targetPos.x,targetPos.y)))));
+            this.map[tapPos.x][tapPos.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(targetPos.x, targetPos.y)))
+                , cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(tapPos.x, tapPos.y)))));
+            this.map[targetPos.x][targetPos.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(tapPos.x, tapPos.y)))
+                , cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(targetPos.x, targetPos.y)))));
         }
     }
-   
-    boomTiles(boomList:cc.Vec3[]){
+
+    boomTiles(boomList: BoomData[]) {
         let count = 0;
-        if(boomList.length>0){
-            cc.director.emit(EventConstant.PLAY_AUDIO,{detail:{name:AudioPlayer.BOOM_TILE}});
+        if (boomList.length > 0) {
+            cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.BOOM_TILE } });
         }
         for (let i = 0; i < boomList.length; i++) {
-            Logic.score+=100;
-            if(Logic.score>=Logic.target&&Logic.step>=0){
-                cc.director.emit(EventConstant.GAME_OVER,{detail:{over:false}});
+            Logic.score += 100;
+            if (Logic.score >= Logic.target && Logic.step >= 0) {
+                cc.director.emit(EventConstant.GAME_OVER, { detail: { over: false } });
             }
             let offset = 10;
             let speed = 0.1;
             let p = boomList[i];
+            switch(this.map[p.x][p.y].data.tileSpecial){
+                case Tile.SPECIAL_NORMAL:break;
+                case Tile.SPECIAL_VERTICAL:Logic.score += 200;break;
+                case Tile.SPECIAL_HORIZONTAL:Logic.score += 200;break;
+                case Tile.SPECIAL_CROSS:Logic.score += 400;break;
+                case Tile.SPECIAL_FIVE:Logic.score += 800;break;
+            }
             this.map[p.x][p.y].node.runAction(cc.sequence(
-                cc.moveBy(speed,0,offset)
-                ,cc.moveBy(speed,0,-offset)
-                ,cc.moveBy(speed,0,offset)
-                ,cc.moveBy(speed,0,-offset)
-                ,cc.moveBy(speed/2,offset,0)
-                ,cc.moveBy(speed/2,-offset,0)
-                ,cc.moveBy(speed/2,offset,0)
-                ,cc.moveBy(speed/2,-offset,0)
-            ,cc.fadeOut(this.speed)
-            ,cc.callFunc(()=>{
-                this.map[p.x][p.y].node.opacity = 0;
-                this.map[p.x][p.y].data = TileData.getEmptyTileData(p.x,p.y);
-                // if(p.z>0){
-                //     this.map[p.x][p.y].data.tileSpecial = p.z;
-                //     this.map[p.x][p.y].node.opacity = 255;
-                //     this.map[p.x][p.y].updateTile();
-                //     cc.log(p);
-                // }else{
-                //     this.map[p.x][p.y].node.opacity = 0;
-                //     this.map[p.x][p.y].data = TileData.getEmptyTileData(p.x,p.y);
-                // }
-            }),cc.callFunc(()=>{
-                count++;
-                if(count == boomList.length){
-                    this.canFall = true;
-                }
-            })));
+                cc.moveBy(speed, 0, offset)
+                , cc.moveBy(speed, 0, -offset)
+                , cc.moveBy(speed, 0, offset)
+                , cc.moveBy(speed, 0, -offset)
+                , cc.moveBy(speed / 2, offset, 0)
+                , cc.moveBy(speed / 2, -offset, 0)
+                , cc.moveBy(speed / 2, offset, 0)
+                , cc.moveBy(speed / 2, -offset, 0)
+                , cc.fadeOut(this.speed)
+                , cc.callFunc(() => {
+                    // this.map[p.x][p.y].node.opacity = 0;
+                    // this.map[p.x][p.y].data = TileData.getEmptyTileData(p.x, p.y);
+                    if (p.tileSpecial > 0 && p.isCenter) {
+                        this.map[p.x][p.y].data.tileSpecial = p.tileSpecial;
+                        this.map[p.x][p.y].node.opacity = 255;
+                        this.map[p.x][p.y].updateTile();
+                        cc.log(p);
+                    } else {
+                        this.map[p.x][p.y].node.opacity = 0;
+                        this.map[p.x][p.y].data = TileData.getEmptyTileData(p.x, p.y);
+                    }
+                }), cc.callFunc(() => {
+                    count++;
+                    if (count == boomList.length) {
+                        this.canFall = true;
+                    }
+                })));
         }
     }
-    fallTiles(){
+    fallTiles() {
         this.canFall = false;
         let fallList = this.getFallList();
-        if(fallList.length>0){
-            cc.director.emit(EventConstant.PLAY_AUDIO,{detail:{name:AudioPlayer.FALL_TILE}});
+        if (fallList.length > 0) {
+            cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.FALL_TILE } });
         }
         let count = 0;
         for (let i = 0; i < fallList.length; i++) {
             let p = fallList[i];
             this.switchTileData(cc.v2(p.x, p.y), cc.v2(p.x, p.y - p.z));
-            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed),cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()),cc.callFunc(()=>{
+            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed), cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()), cc.callFunc(() => {
                 count++;
-                if(count == fallList.length){
+                if (count == fallList.length) {
                     this.canFill = true;
                 }
             })));
         }
-        if(fallList.length<1){
+        if (fallList.length < 1) {
             this.canFill = true;
         }
     }
-    fillTiles(){
+    fillTiles() {
         this.canFill = false;
         let emptyList = this.getEmptyList();
         let count = 0;
         for (let i = 0; i < emptyList.length; i++) {
             let p = emptyList[i];
-            this.map[p.x][p.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE+p.y))),cc.fadeIn(this.speed), cc.moveTo(this.speed*2, GameWorld.getPosInMap(cc.v2(p.x, p.y))).easing(cc.easeBackIn()),cc.callFunc(()=>{
+            this.map[p.x][p.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE + p.y))), cc.fadeIn(this.speed), cc.moveTo(this.speed * 2, GameWorld.getPosInMap(cc.v2(p.x, p.y))).easing(cc.easeBackIn()), cc.callFunc(() => {
                 count++;
-                if(count == emptyList.length){
+                if (count == emptyList.length) {
                     let boomList = this.getBoomList();
                     this.boomList = boomList;
                     this.boomTiles(boomList);
-                    if(boomList.length<1&&Logic.step<1){
-                        cc.director.emit(EventConstant.GAME_OVER,{detail:{over:true}});
+                    if (boomList.length < 1 && Logic.step < 1) {
+                        cc.director.emit(EventConstant.GAME_OVER, { detail: { over: true } });
                     }
                 }
             })));
@@ -222,82 +230,103 @@ export default class GameWorld extends cc.Component {
         this.map[targetPos.x][targetPos.y] = tile1;
     }
     /**获取可消除方块坐标列表 */
-    getBoomList(): cc.Vec3[] {
-        let boomMap: { [key: string]: cc.Vec3 } = {};
+    getBoomList(): BoomData[] {
+        let boomList: BoomData[] = new Array();
+        let boomList1: BoomData[] = new Array();
+        let boomList2: BoomData[] = new Array();
+        let boomMap: { [key: string]: BoomData } = {};
         for (let i = 0; i < this.map.length; i++) {
+            let templist: cc.Vec2[] = new Array();
+            let startIndex = 0;
             for (let j = 0; j < this.map[0].length; j++) {
-                let boomList1: cc.Vec3[] = new Array();
-                boomList1 = this.findBoomTile(boomList1, i, j, 0);
-                boomList1 = this.findBoomTile(boomList1, i, j, 1);
-                let boomList2: cc.Vec3[] = new Array();
-                boomList2 = this.findBoomTile(boomList2, i, j, 2);
-                boomList2 = this.findBoomTile(boomList2, i, j, 3);
-                if (boomList1.length > 1) {
-                    for (let p of boomList1) {
-                        boomMap = this.setBoomMapData(boomMap,p);
-                    }
-                    boomMap = this.setBoomMapData(boomMap,cc.v3(i,j,0));
+                if (!this.isTypeEqual(cc.v2(i, j), cc.v2(i, startIndex))) {
+                    boomList1 = this.getTempBoomList(boomList1, templist, true);
+                    templist = new Array();
+                    startIndex = j;
                 }
-                if (boomList2.length > 1) {
-                    for (let p of boomList2) {
-                        boomMap = this.setBoomMapData(boomMap,p);
-                    }
-                    boomMap = this.setBoomMapData(boomMap,cc.v3(i,j,0));
+                templist.push(cc.v2(i, j));
+                if (j == this.map[0].length - 1) {
+                    boomList1 = this.getTempBoomList(boomList1, templist, true);
                 }
-                // //设置横竖特殊
-                // if(boomList1.length>2){
-                //     boomMap = this.setBoomMapData(boomMap,cc.v3(i,j,2));
-                //     cc.log('four2')
-                // }
-                // if(boomList2.length>2){
-                //     boomMap = this.setBoomMapData(boomMap,cc.v3(i,j,1));
-                //     cc.log('four1')
-                // }
-                // //设置交叉特殊
-                // if(boomList1.length>1&&boomList2.length>1){
-                //     boomMap = this.setBoomMapData(boomMap,cc.v3(i,j,3));
-                //     cc.log('cross')
-                // }
-                // //设置五连
-                // if(boomList1.length>3||boomList2.length>3){
-                //     boomMap = this.setBoomMapData(boomMap,cc.v3(i,j,4));
-                //     cc.log('five')
-                // }
             }
         }
-        let boomList:cc.Vec3[] = new Array();
+        for (let j = 0; j < this.map[0].length; j++) {
+            let templist: cc.Vec2[] = new Array();
+            let startIndex = 0;
+            for (let i = 0; i < this.map.length; i++) {
+                if (!this.isTypeEqual(cc.v2(i, j), cc.v2(startIndex, j))) {
+                    boomList2 = this.getTempBoomList(boomList2, templist, false);
+                    templist = new Array();
+                    startIndex = i;
+                }
+                templist.push(cc.v2(i, j));
+                if (i == this.map.length - 1) {
+                    boomList2 = this.getTempBoomList(boomList2, templist, false);
+                }
+            }
+        }
+        let list = boomList1.concat(boomList2);
+        for (let p of list) {
+            let bm = boomMap[`x=${p.x}y=${p.y}`];
+            if (bm) {
+                if ((bm.tileSpecial != Tile.SPECIAL_VERTICAL && bm.tileSpecial != Tile.SPECIAL_FIVE && p.tileSpecial == Tile.SPECIAL_VERTICAL)
+                    || (bm.tileSpecial != Tile.SPECIAL_HORIZONTAL && bm.tileSpecial != Tile.SPECIAL_FIVE && p.tileSpecial == Tile.SPECIAL_HORIZONTAL)
+                    || (bm.tileSpecial != Tile.SPECIAL_FIVE && p.tileSpecial == Tile.SPECIAL_NORMAL)) {
+                    boomMap[`x=${p.x}y=${p.y}`].tileSpecial = Tile.SPECIAL_CROSS;
+                } else if (p.tileSpecial == Tile.SPECIAL_FIVE) {
+                    boomMap[`x=${p.x}y=${p.y}`].tileSpecial = Tile.SPECIAL_FIVE;
+                }
+            } else {
+                boomMap[`x=${p.x}y=${p.y}`] = p;
+            }
+        }
         for (let k in boomMap) {
             let pos = boomMap[k];
             boomList.push(pos);
         }
         return boomList;
     }
-    setBoomMapData(boomMap: { [key: string]: cc.Vec3 },p:cc.Vec3): { [key: string]: cc.Vec3 }{
-        if(boomMap[`x=${p.x}y=${p.y}`]){
-            if(boomMap[`x=${p.x}y=${p.y}`].z<=p.z){
+    getTempBoomList(boomList: BoomData[], templist: cc.Vec2[], isVertical): BoomData[] {
+        let type = Tile.SPECIAL_NORMAL;
+        if (templist.length > 3) {
+            type = isVertical ? Tile.SPECIAL_VERTICAL : Tile.SPECIAL_HORIZONTAL;
+        }
+        if (templist.length > 4) {
+            type = Tile.SPECIAL_FIVE;
+        }
+        if (templist.length > 2) {
+            for (let i = 0; i < templist.length; i++) {
+                boomList.push(new BoomData(templist[i].x, templist[i].y, i == templist.length - 1, type));
+            }
+        }
+        return boomList;
+    }
+    setBoomMapData(boomMap: { [key: string]: cc.Vec3 }, p: cc.Vec3): { [key: string]: cc.Vec3 } {
+        if (boomMap[`x=${p.x}y=${p.y}`]) {
+            if (boomMap[`x=${p.x}y=${p.y}`].z <= p.z) {
                 boomMap[`x=${p.x}y=${p.x}`] = p.clone();
             }
-        }else{
+        } else {
             boomMap[`x=${p.x}y=${p.y}`] = p.clone();
         }
         return boomMap;
     }
     /**获取可下落方块坐标列表 其中z代表下落格数 */
     getFallList(): cc.Vec3[] {
-        let fallList:cc.Vec3[] = new Array();
+        let fallList: cc.Vec3[] = new Array();
         for (let i = 0; i < this.map.length; i++) {
             let count = 0;
             let isSave = false;
             for (let j = 0; j < this.map[0].length; j++) {
                 //由下往上查找是否有空方块，如果有计数+1，继续遍历到空方块继续+1，不是空方块且计数不为0，保存该点，继续寻找下一个
                 if (this.map[i][j].data.isEmpty) {
-                    if(isSave){
+                    if (isSave) {
                         isSave = false;
                         count = 0;
                     }
                     count++;
-                }else{
-                    if(count>0){
+                } else {
+                    if (count > 0) {
                         isSave = true;
                         fallList.push(cc.v3(i, j, count));
                     }
@@ -329,7 +358,7 @@ export default class GameWorld extends cc.Component {
             case 3: i = x + 1; break;
         }
         if (this.isTypeEqual(cc.v2(x, y), cc.v2(i, j))) {
-            boomList.push(cc.v3(i, j,0));
+            boomList.push(cc.v3(i, j, 0));
             return this.findBoomTile(boomList, i, j, dir);
         } else {
             return boomList;
@@ -367,14 +396,14 @@ export default class GameWorld extends cc.Component {
     }
 
     update(dt) {
-        if(this.isTimeDelay(dt)){
-            if(this.canFall){
+        if (this.isTimeDelay(dt)) {
+            if (this.canFall) {
                 this.fallTiles();
             }
-            if(this.canFill){
+            if (this.canFill) {
                 this.fillTiles();
             }
-            Logic.isProcessing = this.boomList.length>0;
+            Logic.isProcessing = this.boomList.length > 0;
         }
     }
 
