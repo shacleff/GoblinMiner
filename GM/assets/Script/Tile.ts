@@ -42,7 +42,7 @@ export default class Tile extends cc.Component {
                 this.glow.opacity = 0;
                 return;
             }
-            let end = this.node.convertToNodeSpace(event.getLocation());
+            let end = this.node.convertToNodeSpaceAR(event.getLocation());
             let pos = this.data.posIndex.clone();
             if(Utils.getDistance(cc.v2(0,0),end)<32){
                 return;
