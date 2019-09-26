@@ -30,7 +30,7 @@ export default class GameWorld extends cc.Component {
     static readonly BOTTOM_LINE_INDEX = 5;
     static readonly TILE_SIZE: number = 80;
     static WIDTH_SIZE: number = 9;
-    static HEIGHT_SIZE: number = 11;
+    static HEIGHT_SIZE: number = 9;
     static MAPX: number = -GameWorld.WIDTH_SIZE * GameWorld.TILE_SIZE / 2;
     static MAPY: number = 128;
     canFall = false;//是否下落
