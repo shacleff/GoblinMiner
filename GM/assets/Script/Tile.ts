@@ -22,6 +22,11 @@ export default class Tile extends cc.Component {
     data:TileData;
     sprite:cc.Sprite;
     glow:cc.Node;
+    static readonly  SPECIAL_NORMAL = 0;
+    static readonly  SPECIAL_VERTICAL = 1;
+    static readonly  SPECIAL_HORIZONTAL = 2;
+    static readonly  SPECIAL_CROSS = 3;
+    static readonly  SPECIAL_FIVE = 4;
 
     // LIFE-CYCLE CALLBACKS:
 
