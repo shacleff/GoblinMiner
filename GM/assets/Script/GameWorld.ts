@@ -82,13 +82,37 @@ export default class GameWorld extends cc.Component {
         }
     }
     /**检查地图是否可以消除 */
-    checkMapCanBoom(){
-        // for (let i = 0; i < this.map.length; i++) {
-        //     let templist: cc.Vec2[] = new Array();
+    checkMapCanBoom():boolean{
+        // let mapdata = this.getMapDataClone();
+        // let isCanBoom = false;
+        // for (let i = 0; i < mapdata.length; i++) {
         //     let startIndex = 0;
-        //     for (let j = 0; j < this.map[0].length; j++) {
+        //     for (let j = 0; j < mapdata[0].length-1; j++) {
+        //         //竖排元素交换
+        //         let temp = mapdata[i][j];
+        //         mapdata[i][j] = mapdata[i][j+1];
+        //         mapdata[i][j+1] = temp;
+        //         let templist: cc.Vec2[] = [];
+        //         //检查横排是否可消除
+        //         for(let k = j;k<mapdata[0].length;k++){
+        //             if (!this.isTypeEqual(cc.v2(i, j), cc.v2(i, k))){
+        //                 if(templist.length>2){
+        //                     return true;
+        //                 }
+        //             }
+        //             templist.push(cc.v2(i, j));
+        //         }
+        //         for(let k = j+1;k<mapdata[0].length;k++){
+        //             if (!this.isTypeEqual(cc.v2(i, j+1), cc.v2(i, k))){
+        //                 if(templist.length>2){
+        //                     return true;
+        //                 }
+        //             }
+        //             templist.push(cc.v2(i, j));
+        //         }
+        //         templist = []
         //         if (!this.isTypeEqual(cc.v2(i, j), cc.v2(i, startIndex))) {
-        //             boomList1 = this.getTempBoomList([], templist, true,dynamicList);
+        //             boomList1 = this.getTempBoomList([], templist, true,[]);
         //             templist = new Array();
         //             startIndex = j;
         //         }
@@ -98,6 +122,18 @@ export default class GameWorld extends cc.Component {
         //         }
         //     }
         // }
+        return false;
+    }
+    getMapDataClone():TileData[][]{
+        let mapdata:TileData[][] = new Array();
+        for (let i = 0; i < this.map.length; i++) {
+            mapdata[i] = new Array();
+            for (let j = 0; j < this.map[0].length; j++) {
+                let tileData = this.map[i][j].data.clone();
+                mapdata[i][j] = tileData;
+            }
+        }
+        return mapdata;
     }
     showMap(): string {
         let str = '';

@@ -28,6 +28,9 @@ export default class TileData{
         this.isEmpty = data.isEmpty;
         this.isBlock = data.isBlock;
     }
+    clone():TileData{
+        return new TileData(this.tileType,this.posIndex.clone(),this.resName,this.isEmpty,this.isBlock); 
+    }
     static getEmptyTileData(x:number,y:number):TileData{
         return new TileData('00',cc.v2(x,y),'tile000',true,false);
     }
