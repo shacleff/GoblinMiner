@@ -37,6 +37,7 @@ export default class GameWorld extends cc.Component {
     canFill = false;//是否填充
     boomList: BoomData[] = [];
     speed = 0.1;
+
     onLoad() {
         cc.log(GameWorld.MAPX);
         cc.director.on(EventConstant.TILE_SWITCH, (event) => {
@@ -59,6 +60,9 @@ export default class GameWorld extends cc.Component {
             for (let j = 0; j < GameWorld.HEIGHT_SIZE; j++) {
                 let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
                 tile.initTile(TileData.getRandomTileData(i, j));
+                if(j < 7){
+                    tile.initTile(TileData.getBlockTileData(i, j));
+                }
                 this.actorLayer.addChild(tile.node);
                 this.map[i][j] = tile;
             }
@@ -76,6 +80,24 @@ export default class GameWorld extends cc.Component {
         if (boomList.length > 0) {
             this.checkMapValid();
         }
+    }
+    /**检查地图是否可以消除 */
+    checkMapCanBoom(){
+        // for (let i = 0; i < this.map.length; i++) {
+        //     let templist: cc.Vec2[] = new Array();
+        //     let startIndex = 0;
+        //     for (let j = 0; j < this.map[0].length; j++) {
+        //         if (!this.isTypeEqual(cc.v2(i, j), cc.v2(i, startIndex))) {
+        //             boomList1 = this.getTempBoomList([], templist, true,dynamicList);
+        //             templist = new Array();
+        //             startIndex = j;
+        //         }
+        //         templist.push(cc.v2(i, j));
+        //         if (j == this.map[0].length - 1) {
+        //             boomList1 = this.getTempBoomList(boomList1, templist, true,dynamicList);
+        //         }
+        //     }
+        // }
     }
     showMap(): string {
         let str = '';
@@ -96,11 +118,15 @@ export default class GameWorld extends cc.Component {
             case '04': return '4';
             case '05': return '5';
             case '06': return '6';
+            case 'b0': return 'b';
             default: return '0';
         }
     }
     tileSwitched(tapPos: cc.Vec2, targetPos: cc.Vec2, isFall: boolean) {
         if (targetPos.x > this.map.length - 1 || targetPos.x < 0 || targetPos.y > this.map[0].length - 1 || targetPos.y < 0) {
+            return;
+        }
+        if(this.map[targetPos.x][targetPos.y].data.isBlock){
             return;
         }
         if (this.canFall || this.canFill) {
@@ -111,7 +137,7 @@ export default class GameWorld extends cc.Component {
             return;
         }
         this.switchTileData(tapPos, targetPos);
-        let boomList = this.getBoomList();
+        let boomList = this.getBoomList([tapPos,targetPos]);
         this.boomList = boomList;
         if (boomList.length > 0) {
             Logic.step--;
@@ -140,12 +166,12 @@ export default class GameWorld extends cc.Component {
             let offset = 10;
             let speed = 0.1;
             let p = boomList[i];
-            switch(this.map[p.x][p.y].data.tileSpecial){
-                case Tile.SPECIAL_NORMAL:break;
-                case Tile.SPECIAL_VERTICAL:Logic.score += 200;break;
-                case Tile.SPECIAL_HORIZONTAL:Logic.score += 200;break;
-                case Tile.SPECIAL_CROSS:Logic.score += 400;break;
-                case Tile.SPECIAL_FIVE:Logic.score += 800;break;
+            switch (this.map[p.x][p.y].data.tileSpecial) {
+                case Tile.SPECIAL_NORMAL: break;
+                case Tile.SPECIAL_VERTICAL: Logic.score += 200; break;
+                case Tile.SPECIAL_HORIZONTAL: Logic.score += 200; break;
+                case Tile.SPECIAL_CROSS: Logic.score += 400; break;
+                case Tile.SPECIAL_FIVE: Logic.score += 800; break;
             }
             this.map[p.x][p.y].node.runAction(cc.sequence(
                 cc.moveBy(speed, 0, offset)
@@ -158,8 +184,6 @@ export default class GameWorld extends cc.Component {
                 , cc.moveBy(speed / 2, -offset, 0)
                 , cc.fadeOut(this.speed)
                 , cc.callFunc(() => {
-                    // this.map[p.x][p.y].node.opacity = 0;
-                    // this.map[p.x][p.y].data = TileData.getEmptyTileData(p.x, p.y);
                     if (p.tileSpecial > 0 && p.isCenter) {
                         this.map[p.x][p.y].data.tileSpecial = p.tileSpecial;
                         this.map[p.x][p.y].node.opacity = 255;
@@ -212,6 +236,8 @@ export default class GameWorld extends cc.Component {
                     this.boomTiles(boomList);
                     if (boomList.length < 1 && Logic.step < 1) {
                         cc.director.emit(EventConstant.GAME_OVER, { detail: { over: true } });
+                    }else if (boomList.length < 1){
+                        this.checkMapCanBoom();
                     }
                 }
             })));
@@ -230,7 +256,7 @@ export default class GameWorld extends cc.Component {
         this.map[targetPos.x][targetPos.y] = tile1;
     }
     /**获取可消除方块坐标列表 */
-    getBoomList(): BoomData[] {
+    getBoomList(dynamicList?:cc.Vec2[]): BoomData[] {
         let boomList: BoomData[] = new Array();
         let boomList1: BoomData[] = new Array();
         let boomList2: BoomData[] = new Array();
@@ -240,13 +266,13 @@ export default class GameWorld extends cc.Component {
             let startIndex = 0;
             for (let j = 0; j < this.map[0].length; j++) {
                 if (!this.isTypeEqual(cc.v2(i, j), cc.v2(i, startIndex))) {
-                    boomList1 = this.getTempBoomList(boomList1, templist, true);
+                    boomList1 = this.getTempBoomList(boomList1, templist, true,dynamicList);
                     templist = new Array();
                     startIndex = j;
                 }
                 templist.push(cc.v2(i, j));
                 if (j == this.map[0].length - 1) {
-                    boomList1 = this.getTempBoomList(boomList1, templist, true);
+                    boomList1 = this.getTempBoomList(boomList1, templist, true,dynamicList);
                 }
             }
         }
@@ -255,13 +281,13 @@ export default class GameWorld extends cc.Component {
             let startIndex = 0;
             for (let i = 0; i < this.map.length; i++) {
                 if (!this.isTypeEqual(cc.v2(i, j), cc.v2(startIndex, j))) {
-                    boomList2 = this.getTempBoomList(boomList2, templist, false);
+                    boomList2 = this.getTempBoomList(boomList2, templist, false,dynamicList);
                     templist = new Array();
                     startIndex = i;
                 }
                 templist.push(cc.v2(i, j));
                 if (i == this.map.length - 1) {
-                    boomList2 = this.getTempBoomList(boomList2, templist, false);
+                    boomList2 = this.getTempBoomList(boomList2, templist, false,dynamicList);
                 }
             }
         }
@@ -269,12 +295,9 @@ export default class GameWorld extends cc.Component {
         for (let p of list) {
             let bm = boomMap[`x=${p.x}y=${p.y}`];
             if (bm) {
-                if ((bm.tileSpecial != Tile.SPECIAL_VERTICAL && bm.tileSpecial != Tile.SPECIAL_FIVE && p.tileSpecial == Tile.SPECIAL_VERTICAL)
-                    || (bm.tileSpecial != Tile.SPECIAL_HORIZONTAL && bm.tileSpecial != Tile.SPECIAL_FIVE && p.tileSpecial == Tile.SPECIAL_HORIZONTAL)
-                    || (bm.tileSpecial != Tile.SPECIAL_FIVE && p.tileSpecial == Tile.SPECIAL_NORMAL)) {
+                if (bm.tileSpecial != Tile.SPECIAL_FIVE && bm.tileSpecial != Tile.SPECIAL_CROSS) {
                     boomMap[`x=${p.x}y=${p.y}`].tileSpecial = Tile.SPECIAL_CROSS;
-                } else if (p.tileSpecial == Tile.SPECIAL_FIVE) {
-                    boomMap[`x=${p.x}y=${p.y}`].tileSpecial = Tile.SPECIAL_FIVE;
+                    boomMap[`x=${p.x}y=${p.y}`].isCenter = true;
                 }
             } else {
                 boomMap[`x=${p.x}y=${p.y}`] = p;
@@ -282,21 +305,59 @@ export default class GameWorld extends cc.Component {
         }
         for (let k in boomMap) {
             let pos = boomMap[k];
-            boomList.push(pos);
+            if(!this.map[pos.x][pos.y].data.isBlock){
+                boomList.push(pos);
+                // let top = cc.v2(pos.x,pos.y+1);
+                // let bottom = cc.v2(pos.x,pos.y-1);
+                // let left = cc.v2(pos.x-1,pos.y);
+                // let right = cc.v2(pos.x+1,pos.y);
+                // if(boomMap[`x=${top.x}y=${top.y}`]&&this.map[top.x][top.y].data.isBlock){
+                //     boomList.push(boomMap[`x=${top.x}y=${top.y}`]);
+                // }
+                // if(boomMap[`x=${bottom.x}y=${bottom.y}`]&&this.map[bottom.x][bottom.y].data.isBlock){
+                //     boomList.push(boomMap[`x=${bottom.x}y=${bottom.y}`]);
+                // }
+                // if(boomMap[`x=${left.x}y=${left.y}`]&&this.map[left.x][left.y].data.isBlock){
+                //     boomList.push(boomMap[`x=${left.x}y=${left.y}`]);
+                // }
+                // if(boomMap[`x=${right.x}y=${right.y}`]&&this.map[right.x][right.y].data.isBlock){
+                //     boomList.push(boomMap[`x=${right.x}y=${right.y}`]);
+                // }
+            }
         }
         return boomList;
     }
-    getTempBoomList(boomList: BoomData[], templist: cc.Vec2[], isVertical): BoomData[] {
+    getTempBoomList(boomList: BoomData[], templist: cc.Vec2[], isVertical: boolean,dynamicList?:cc.Vec2[]): BoomData[] {
         let type = Tile.SPECIAL_NORMAL;
+        let hasCenter = false;
+        //四消
         if (templist.length > 3) {
             type = isVertical ? Tile.SPECIAL_VERTICAL : Tile.SPECIAL_HORIZONTAL;
         }
+        //五消
         if (templist.length > 4) {
             type = Tile.SPECIAL_FIVE;
         }
+        //三个或者以上的列表才添加到数组
         if (templist.length > 2) {
             for (let i = 0; i < templist.length; i++) {
-                boomList.push(new BoomData(templist[i].x, templist[i].y, i == templist.length - 1, type));
+                let isCenter = false;
+                let p = cc.v2(templist[i].x, templist[i].y);
+                if(dynamicList){
+                    for(let temp of dynamicList){
+                        if(temp.equals(p)){
+                            isCenter = true;
+                            break;
+                        }
+                    }
+                }
+                if(!isCenter){
+                    isCenter = i == Math.floor(templist.length/2);
+                }
+                boomList.push(new BoomData(templist[i].x, templist[i].y, isCenter&&!hasCenter&&templist.length > 3, type));
+                if(isCenter){
+                    hasCenter = true;
+                }
             }
         }
         return boomList;
@@ -336,7 +397,7 @@ export default class GameWorld extends cc.Component {
         return fallList;
     }
     /**获取空的下标列表 */
-    getEmptyList() {
+    getEmptyList() :cc.Vec2[]{
         let emptyList = new Array();
         for (let i = 0; i < this.map.length; i++) {
             for (let j = 0; j < this.map[0].length; j++) {
