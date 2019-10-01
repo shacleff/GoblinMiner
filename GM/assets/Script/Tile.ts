@@ -72,6 +72,14 @@ export default class Tile extends cc.Component {
         this.changeRes();
         this.node.position = GameWorld.getPosInMap(this.data.posIndex);
     }
+    updateTilePosition(isAnim:boolean,callback:Function){
+        if(isAnim){
+            this.node.runAction(cc.sequence(cc.moveTo(0.2,GameWorld.getPosInMap(this.data.posIndex)),cc.callFunc(callback)));
+        }else{
+            this.node.position = GameWorld.getPosInMap(this.data.posIndex);
+            callback();
+        }
+    }
     changeRes(){
         if(!this.sprite){
             this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);

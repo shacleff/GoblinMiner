@@ -35,6 +35,7 @@ export default class GameWorld extends cc.Component {
     static MAPY: number = 128;
     canFall = false;//是否下落
     canFill = false;//是否填充
+    isRandoming = false;//是否正在随机
     boomList: BoomData[] = [];
     speed = 0.1;
 
@@ -79,24 +80,69 @@ export default class GameWorld extends cc.Component {
         }
         if (boomList.length > 0) {
             this.checkMapValid();
-        }else{
-            this.checkMapCanBoom();
+        } else if (!this.checkMapCanBoom()) {
+            this.randomSortMap();
         }
+    }
+    /**打乱顺序 重新排列可移动元素*/
+    randomSortMap(isAnim?:boolean) {
+        cc.log("randomSortMap");
+        this.isRandoming = true;
+        let indexs1: cc.Vec2[] = new Array();
+        let indexs2: cc.Vec2[] = new Array();
+        for (let i = 0; i < this.map.length; i++) {
+            for (let j = 0; j < this.map[0].length; j++) {
+                if (!this.isBlockOrEmptyType(this.map[i][j].data.tileType)) {
+                    indexs1.push(cc.v2(i, j));
+                    indexs2.push(cc.v2(i, j));
+                }
+            }
+        }
+        indexs2.sort(() => {
+            return Math.random() - 0.5;
+        })
+        for (let i = 0; i < indexs1.length; i++) {
+            let pos1 = indexs1[i].clone();
+            let pos2 = indexs2[i].clone();
+            this.map[pos1.x][pos1.y].data.posIndex = pos2;
+            this.map[pos2.x][pos2.y].data.posIndex = pos1;
+            let temp = this.map[pos1.x][pos1.y];
+            this.map[pos1.x][pos1.y] = this.map[pos2.x][pos2.y];
+            this.map[pos2.x][pos2.y] = temp;
+        }
+        let boomList = this.getBoomList();
+        if(!this.checkMapCanBoom() || boomList.length > 0){
+            cc.log(this.showMap());
+            this.randomSortMap(isAnim);
+            return;
+        }
+        let count = 0;
+        for (let i = 0; i < indexs1.length; i++) {
+            let pos = indexs1[i].clone();
+            this.map[pos.x][pos.y].updateTilePosition(isAnim,()=>{
+                count++;
+                if(count == indexs1.length){
+                    this.isRandoming = false;
+                }
+            });
+        }
+
+
     }
     /**检查地图是否可以消除 */
     checkMapCanBoom(): boolean {
         let mapdata = this.getMapDataClone();
         for (let i = 0; i < mapdata.length; i++) {
             for (let j = 0; j < mapdata[0].length; j++) {
-                if(mapdata[i][j].isBlock){
+                if (mapdata[i][j].isBlock) {
                     continue;
                 }
                 let temp = mapdata[i][j];
-                if(j<mapdata[0].length-1 && !mapdata[i][j + 1].isBlock){
+                if (j < mapdata[0].length - 1) {
                     //竖排元素交换
                     mapdata[i][j] = mapdata[i][j + 1];
                     mapdata[i][j + 1] = temp;
-                    if (this.checkPosCanBoom(cc.v2(i, j), mapdata)||this.checkPosCanBoom(cc.v2(i, j+1), mapdata)){
+                    if (this.checkPosHasThree(cc.v2(i, j), mapdata) || this.checkPosHasThree(cc.v2(i, j + 1), mapdata)) {
                         cc.log("CanBoom");
                         return true;
                     }
@@ -105,12 +151,12 @@ export default class GameWorld extends cc.Component {
                     mapdata[i][j] = mapdata[i][j + 1];
                     mapdata[i][j + 1] = temp;
                 }
-                if(i<mapdata.length-1 && !mapdata[i + 1][j].isBlock){
+                if (i < mapdata.length - 1) {
                     //横排元素交换
                     temp = mapdata[i][j];
                     mapdata[i][j] = mapdata[i + 1][j];
                     mapdata[i + 1][j] = temp;
-                    if (this.checkPosCanBoom(cc.v2(i, j), mapdata)||this.checkPosCanBoom(cc.v2(i+1, j), mapdata)){
+                    if (this.checkPosHasThree(cc.v2(i, j), mapdata) || this.checkPosHasThree(cc.v2(i + 1, j), mapdata)) {
                         cc.log("CanBoom");
                         return true;
                     }
@@ -124,36 +170,27 @@ export default class GameWorld extends cc.Component {
         cc.log("NoTileCanBoom");
         return false;
     }
-    checkPosCanBoom(pos: cc.Vec2, mapdata: TileData[][]): boolean {
-        let templist: cc.Vec2[] = [];
-        for (let i = pos.y; i < mapdata[0].length; i++) {
-            if (!this.isDataTypeEqual(pos, cc.v2(pos.x, i), mapdata)) {
-                return templist.length > 2;
-            }
-            templist.push(cc.v2(pos.x, i));
+    checkPosHasThree(pos: cc.Vec2, mapdata: TileData[][]): boolean {
+        let i = pos.x;
+        let j = pos.y;
+        if (this.isDataTypeEqual(cc.v2(i, j), cc.v2(i, j + 1), mapdata)
+            && this.isDataTypeEqual(cc.v2(i, j), cc.v2(i, j + 2), mapdata)
+            || this.isDataTypeEqual(cc.v2(i, j), cc.v2(i, j - 1), mapdata)
+            && this.isDataTypeEqual(cc.v2(i, j), cc.v2(i, j - 2), mapdata)
+            || this.isDataTypeEqual(cc.v2(i, j), cc.v2(i, j - 1), mapdata)
+            && this.isDataTypeEqual(cc.v2(i, j), cc.v2(i, j + 1), mapdata)
+            || this.isDataTypeEqual(cc.v2(i, j), cc.v2(i + 1, j), mapdata)
+            && this.isDataTypeEqual(cc.v2(i, j), cc.v2(i + 2, j), mapdata)
+            || this.isDataTypeEqual(cc.v2(i, j), cc.v2(i - 1, j), mapdata)
+            && this.isDataTypeEqual(cc.v2(i, j), cc.v2(i - 2, j), mapdata)
+            || this.isDataTypeEqual(cc.v2(i, j), cc.v2(i + 1, j), mapdata)
+            && this.isDataTypeEqual(cc.v2(i, j), cc.v2(i - 1, j), mapdata)
+        ) {
+            return true;
         }
-        for (let i = pos.y; i >= 0; i--) {
-            if (!this.isDataTypeEqual(pos, cc.v2(pos.x, i), mapdata)) {
-                return templist.length > 2;
-            }
-            templist.push(cc.v2(pos.x, i));
-        }
-        templist = [];
-        for (let i = pos.x; i >= 0; i--) {
-            if (!this.isDataTypeEqual(pos, cc.v2(i, pos.y), mapdata)) {
-                return templist.length > 2;
-            }
-            templist.push(cc.v2(i, pos.y));
-        }
-        for (let i = pos.x; i < mapdata.length; i++) {
-            if (!this.isDataTypeEqual(pos, cc.v2(i, pos.y), mapdata)) {
-                return templist.length > 2;
-            }
-            templist.push(cc.v2(i, pos.y));
-        }
-
-        return templist.length > 2;
+        return false;
     }
+
     getMapDataClone(): TileData[][] {
         let mapdata: TileData[][] = new Array();
         for (let i = 0; i < this.map.length; i++) {
@@ -302,8 +339,10 @@ export default class GameWorld extends cc.Component {
                     this.boomTiles(boomList);
                     if (boomList.length < 1 && Logic.step < 1) {
                         cc.director.emit(EventConstant.GAME_OVER, { detail: { over: true } });
-                    } else if (boomList.length < 1) {
-                        this.checkMapCanBoom();
+                    } else if (boomList.length < 1 && !this.checkMapCanBoom()) {
+                        this.scheduleOnce(()=>{
+                            this.randomSortMap(true);
+                        },1)
                     }
                 }
             })));
@@ -493,34 +532,27 @@ export default class GameWorld extends cc.Component {
     }
     /**方块是否相同，空白方块忽略 障碍方块忽略 */
     isTypeEqual(pos1: cc.Vec2, pos2: cc.Vec2): boolean {
-        if (pos1.x > this.map.length - 1 || pos1.x < 0 || pos1.y > this.map[0].length - 1 || pos1.y < 0) {
-            return false;
-        }
-        if (pos2.x > this.map.length - 1 || pos2.x < 0 || pos2.y > this.map[0].length - 1 || pos2.y < 0) {
-            return false;
-        }
-        if (this.map[pos1.x][pos1.y].data.tileType == '00' || this.map[pos2.x][pos2.y].data.tileType == '00') {
-            return false;
-        }
-        if (this.map[pos1.x][pos1.y].data.tileType == 'b0' || this.map[pos2.x][pos2.y].data.tileType == 'b0') {
+        if (!GameWorld.isPosIndexValid(pos1)) { return false; }
+        if (!GameWorld.isPosIndexValid(pos2)) { return false; }
+
+        if (this.isBlockOrEmptyType(this.map[pos1.x][pos1.y].data.tileType) || this.isBlockOrEmptyType(this.map[pos2.x][pos2.y].data.tileType)) {
             return false;
         }
         return this.map[pos1.x][pos1.y].data.tileType == this.map[pos2.x][pos2.y].data.tileType;
     }
     isDataTypeEqual(pos1: cc.Vec2, pos2: cc.Vec2, mapdata: TileData[][]): boolean {
-        if (pos1.x > mapdata.length - 1 || pos1.x < 0 || pos1.y > mapdata[0].length - 1 || pos1.y < 0) {
-            return false;
-        }
-        if (pos2.x > mapdata.length - 1 || pos2.x < 0 || pos2.y > mapdata[0].length - 1 || pos2.y < 0) {
-            return false;
-        }
-        if (mapdata[pos1.x][pos1.y].tileType == '00' || mapdata[pos2.x][pos2.y].tileType == '00') {
-            return false;
-        }
-        if (mapdata[pos1.x][pos1.y].tileType == 'b0' || mapdata[pos2.x][pos2.y].tileType == 'b0') {
+        if (!GameWorld.isPosIndexValid(pos1)) { return false; }
+        if (!GameWorld.isPosIndexValid(pos2)) { return false; }
+        if (this.isBlockOrEmptyType(mapdata[pos1.x][pos1.y].tileType) || this.isBlockOrEmptyType(mapdata[pos2.x][pos2.y].tileType)) {
             return false;
         }
         return mapdata[pos1.x][pos1.y].tileType == mapdata[pos2.x][pos2.y].tileType;
+    }
+    isBlockOrEmptyType(tileType: string): boolean {
+        if (tileType == '00' || tileType == 'b0') {
+            return true;
+        }
+        return false;
     }
 
     isTimeDelay(dt: number): boolean {
@@ -548,10 +580,13 @@ export default class GameWorld extends cc.Component {
             if (this.canFill) {
                 this.fillTiles();
             }
-            Logic.isProcessing = this.boomList.length > 0;
+            Logic.isProcessing = this.boomList.length > 0 || this.isRandoming;
         }
     }
-
+    /**查看坐标是否有效 */
+    static isPosIndexValid(pos: cc.Vec2): boolean {
+        return pos.x < GameWorld.WIDTH_SIZE && pos.x > -1 && pos.y < GameWorld.HEIGHT_SIZE && pos.y > -1;
+    }
     //获取地图里下标的坐标
     static getPosInMap(pos: cc.Vec2) {
         let x = GameWorld.MAPX + pos.x * GameWorld.TILE_SIZE + GameWorld.TILE_SIZE / 2;
