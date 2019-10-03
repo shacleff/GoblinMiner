@@ -21,7 +21,9 @@ export default class NewClass extends cc.Component {
     @property(cc.Label)
     scorelabel: cc.Label = null;
     @property(cc.Label)
-    targetlabel: cc.Label = null;
+    coinlabel: cc.Label = null;
+    @property(cc.Label)
+    oillabel: cc.Label = null;
     @property(cc.Node)
     againDialog:cc.Node = null;
     @property(cc.Sprite)
@@ -51,6 +53,12 @@ export default class NewClass extends cc.Component {
         Logic.isPaused = true;
         
     }
+    changeOil(){
+        if(Logic.oil>=3){
+            Logic.oil-=3;
+            Logic.step+=2;
+        }
+    }
 
     start () {
 
@@ -59,6 +67,7 @@ export default class NewClass extends cc.Component {
     update (dt) {
         this.steplabel.string = `步数：${Logic.step}`;
         this.scorelabel.string = `得分：${Logic.score}`;
-        this.targetlabel.string = `目标：${Logic.target}`;
+        this.oillabel.string = `燃油：${Logic.oil}`;
+        this.coinlabel.string = `金币：${Logic.coin}`;
     }
 }

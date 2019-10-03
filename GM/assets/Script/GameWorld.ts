@@ -343,19 +343,26 @@ export default class GameWorld extends cc.Component {
             cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.BOOM_TILE } });
         }
         for (let i = 0; i < boomList.length; i++) {
-            Logic.score += 100;
-            if (Logic.score >= Logic.target && Logic.step >= 0) {
-                cc.director.emit(EventConstant.GAME_OVER, { detail: { over: false } });
-            }
+            // if (Logic.score >= Logic.target && Logic.step >= 0) {
+            //     cc.director.emit(EventConstant.GAME_OVER, { detail: { over: false } });
+            // }
             let offset = 10;
             let speed = 0.1;
             let p = boomList[i];
+            let more = 1;
             switch (this.map[p.x][p.y].data.tileSpecial) {
                 case Tile.SPECIAL_NORMAL: break;
-                case Tile.SPECIAL_VERTICAL: Logic.score += 200; break;
-                case Tile.SPECIAL_HORIZONTAL: Logic.score += 200; break;
-                case Tile.SPECIAL_CROSS: Logic.score += 400; break;
-                case Tile.SPECIAL_FIVE: Logic.score += 800; break;
+                case Tile.SPECIAL_VERTICAL: more = 2; break;
+                case Tile.SPECIAL_HORIZONTAL: more = 2; break;
+                case Tile.SPECIAL_CROSS: more = 4; break;
+                case Tile.SPECIAL_FIVE: more = 8; break;
+            }
+            if(this.map[p.x][p.y].data.tileType == '05'){
+                Logic.oil +=more;
+            }else if(this.map[p.x][p.y].data.tileType == '06'){
+                Logic.coin +=more;
+            }else if(this.isTypeBlock(this.map[p.x][p.y].data.tileType)){
+                Logic.score +=100;
             }
             this.map[p.x][p.y].node.runAction(cc.sequence(
                 cc.moveBy(speed, 0, offset)

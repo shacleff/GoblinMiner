@@ -15,9 +15,11 @@ export default class Logic extends cc.Component {
     static isPaused = false;
     static isProcessing = false;
     static score = 0;
+    static coin = 0;
+    static oil = 0;
     static target = 100000000;
-    static step =99;
-    static maxstep = 99;
+    static step =20;
+    static maxstep = 20;
     //图片资源
     static spriteFrames: { [key: string]: cc.SpriteFrame } = null;
     // LIFE-CYCLE CALLBACKS:
@@ -44,6 +46,8 @@ export default class Logic extends cc.Component {
     static reset(target:number,step:number){
         Logic.isProcessing = false;
         Logic.score = 0;
+        Logic.coin = 0;
+        Logic.oil = 0;
         Logic.step = step;
         Logic.maxstep = step;
         Logic.target = target;
