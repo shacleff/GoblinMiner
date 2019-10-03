@@ -27,15 +27,18 @@ export default class GameWorld extends cc.Component {
     private checkTimeDelay = 0;
     actorLayer: cc.Node;
     map: Tile[][] = [];
-    static readonly BOTTOM_LINE_INDEX = 5;
+    blockMap:Tile[][] = [];
+    static readonly BOTTOM_LINE_INDEX = 3;
     static readonly TILE_SIZE: number = 80;
     static WIDTH_SIZE: number = 9;
     static HEIGHT_SIZE: number = 9;
     static MAPX: number = -GameWorld.WIDTH_SIZE * GameWorld.TILE_SIZE / 2;
     static MAPY: number = 128;
+    static readonly BLOCK_HEIGHT = 3;
     canFall = false;//是否下落
     canFill = false;//是否填充
     isRandoming = false;//是否正在随机
+    isTopDown = false;//是否正在下沉
     boomList: BoomData[] = [];
     speed = 0.1;
 
@@ -61,11 +64,22 @@ export default class GameWorld extends cc.Component {
             for (let j = 0; j < GameWorld.HEIGHT_SIZE; j++) {
                 let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
                 tile.initTile(TileData.getRandomTileData(i, j));
-                if (j < 7) {
+                if (j < GameWorld.BLOCK_HEIGHT) {
                     tile.initTile(TileData.getBlockTileData(i, j));
                 }
                 this.actorLayer.addChild(tile.node);
                 this.map[i][j] = tile;
+            }
+        }
+        this.blockMap = new Array();
+        for (let i = 0; i < GameWorld.WIDTH_SIZE; i++) {
+            this.blockMap[i] = new Array();
+            for (let j = 0; j < GameWorld.BLOCK_HEIGHT; j++) {
+                let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
+                tile.initTile(TileData.getBlockTileData(i, j-GameWorld.BLOCK_HEIGHT));
+                tile.node.opacity = 0;
+                this.actorLayer.addChild(tile.node);
+                this.blockMap[i][j] = tile;
             }
         }
         this.checkMapValid();
@@ -85,7 +99,7 @@ export default class GameWorld extends cc.Component {
         }
     }
     /**打乱顺序 重新排列可移动元素*/
-    randomSortMap(isAnim?:boolean) {
+    randomSortMap(isAnim?: boolean) {
         cc.log("randomSortMap");
         this.isRandoming = true;
         let indexs1: cc.Vec2[] = new Array();
@@ -111,7 +125,7 @@ export default class GameWorld extends cc.Component {
             this.map[pos2.x][pos2.y] = temp;
         }
         let boomList = this.getBoomList();
-        if(!this.checkMapCanBoom() || boomList.length > 0){
+        if (!this.checkMapCanBoom() || boomList.length > 0) {
             cc.log(this.showMap());
             this.randomSortMap(isAnim);
             return;
@@ -119,15 +133,72 @@ export default class GameWorld extends cc.Component {
         let count = 0;
         for (let i = 0; i < indexs1.length; i++) {
             let pos = indexs1[i].clone();
-            this.map[pos.x][pos.y].updateTilePosition(isAnim,()=>{
+            this.map[pos.x][pos.y].updateTilePosition(isAnim, () => {
                 count++;
-                if(count == indexs1.length){
+                if (count == indexs1.length) {
                     this.isRandoming = false;
                 }
             });
         }
-
-
+    }
+    /**地图下降 */
+    downMap(){
+        let speed = 0.4;
+        this.isTopDown = true;
+        for (let i = 0; i < this.map.length; i++) {
+            for (let j = 0; j < this.map[0].length; j++) {
+                    this.map[i][j].data.posIndex = cc.v2(i,j+GameWorld.BLOCK_HEIGHT);
+                    if(j>=GameWorld.HEIGHT_SIZE-GameWorld.BLOCK_HEIGHT){
+                        this.map[i][j].node.runAction(cc.fadeOut(speed/2));
+                    }else{
+                        this.map[i][j].node.runAction(cc.moveTo(speed,GameWorld.getPosInMap(this.map[i][j].data.posIndex)));
+                    }
+            }
+        }
+        for (let i = 0; i < this.blockMap.length; i++) {
+            for (let j = 0; j < this.blockMap[0].length; j++) {
+                    this.blockMap[i][j].data.posIndex = cc.v2(i,j);
+                    this.blockMap[i][j].node.opacity = 255;
+                    this.blockMap[i][j].node.runAction(cc.moveTo(speed,GameWorld.getPosInMap(this.blockMap[i][j].data.posIndex)));
+            }
+        }
+        this.scheduleOnce(()=>{
+            for (let i = 0; i < this.map.length; i++) {
+                for (let j = this.map[0].length-1; j-GameWorld.BLOCK_HEIGHT > -1; j--) {
+                        let temp = this.map[i][j];
+                        this.map[i][j] = this.map[i][j-GameWorld.BLOCK_HEIGHT];
+                        this.map[i][j-GameWorld.BLOCK_HEIGHT] = temp;
+                }
+            }
+            for (let i = 0; i < this.blockMap.length; i++) {
+                for (let j = 0; j < this.blockMap[0].length; j++) {
+                        let temp = this.blockMap[i][j];
+                        this.blockMap[i][j] = this.map[i][j];
+                        this.map[i][j] = temp;
+                        this.blockMap[i][j].initTile(TileData.getBlockTileData(i, j-GameWorld.BLOCK_HEIGHT));
+                        this.blockMap[i][j].node.opacity = 0;
+                }
+            }
+            this.isTopDown = false;
+        },speed*1.5)
+        
+        // for (let i = 0; i < this.map.length; i++) {
+        //     for (let j = 0; j < line; j++) {
+        //         let pos = this.map[i][j].data.posIndex.clone();
+        //             this.map[i][j].data.posIndex = this.map[i][j+GameWorld.BLOCK_HEIGHT].data.posIndex.clone();
+        //             this.map[i][j+GameWorld.BLOCK_HEIGHT].data.posIndex = pos;
+        //             let temp = this.map[i][j];
+        //             this.map[i][j] = this.map[i][j+GameWorld.BLOCK_HEIGHT];
+        //             this.map[i][j+GameWorld.BLOCK_HEIGHT] = temp;
+        //             this.map[i][j+GameWorld.BLOCK_HEIGHT].updateTilePosition(true,()=>{});
+        //             this.map[i][j].updateTilePosition(true,()=>{});
+        //     }
+        // }
+        // for (let i = 0; i < this.map.length; i++) {
+        //     for (let j = 0; j < line; j++) {
+        //         this.map[i][j].initTile(TileData.getBlockTileData(i, j));
+        //     }
+        // }
     }
     /**检查地图是否可以消除 */
     checkMapCanBoom(): boolean {
@@ -138,7 +209,7 @@ export default class GameWorld extends cc.Component {
                     continue;
                 }
                 let temp = mapdata[i][j];
-                if (j < mapdata[0].length - 1) {
+                if (j < mapdata[0].length - 1 && !mapdata[i][j + 1].isBlock) {
                     //竖排元素交换
                     mapdata[i][j] = mapdata[i][j + 1];
                     mapdata[i][j + 1] = temp;
@@ -151,7 +222,7 @@ export default class GameWorld extends cc.Component {
                     mapdata[i][j] = mapdata[i][j + 1];
                     mapdata[i][j + 1] = temp;
                 }
-                if (i < mapdata.length - 1) {
+                if (i < mapdata.length - 1 && !mapdata[i + 1][j].isBlock) {
                     //横排元素交换
                     temp = mapdata[i][j];
                     mapdata[i][j] = mapdata[i + 1][j];
@@ -190,7 +261,17 @@ export default class GameWorld extends cc.Component {
         }
         return false;
     }
-
+    /**检查是否3-9层是否还有障碍 */
+    checkMapHasTopBlock():boolean{
+        for (let i = 0; i < this.map.length; i++) {
+            for (let j = 2; j < this.map[0].length; j++) {
+                if(this.isTypeBlock(this.map[i][j].data.tileType)){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     getMapDataClone(): TileData[][] {
         let mapdata: TileData[][] = new Array();
         for (let i = 0; i < this.map.length; i++) {
@@ -340,9 +421,11 @@ export default class GameWorld extends cc.Component {
                     if (boomList.length < 1 && Logic.step < 1) {
                         cc.director.emit(EventConstant.GAME_OVER, { detail: { over: true } });
                     } else if (boomList.length < 1 && !this.checkMapCanBoom()) {
-                        this.scheduleOnce(()=>{
+                        this.scheduleOnce(() => {
                             this.randomSortMap(true);
-                        },1)
+                        }, 1)
+                    } else if(boomList.length < 1 && !this.checkMapHasTopBlock()){
+                        this.downMap();
                     }
                 }
             })));
@@ -412,23 +495,34 @@ export default class GameWorld extends cc.Component {
             let pos = boomMap[k];
             if (!this.map[pos.x][pos.y].data.isBlock) {
                 boomList.push(pos);
-                // let top = cc.v2(pos.x,pos.y+1);
-                // let bottom = cc.v2(pos.x,pos.y-1);
-                // let left = cc.v2(pos.x-1,pos.y);
-                // let right = cc.v2(pos.x+1,pos.y);
-                // if(boomMap[`x=${top.x}y=${top.y}`]&&this.map[top.x][top.y].data.isBlock){
-                //     boomList.push(boomMap[`x=${top.x}y=${top.y}`]);
-                // }
-                // if(boomMap[`x=${bottom.x}y=${bottom.y}`]&&this.map[bottom.x][bottom.y].data.isBlock){
-                //     boomList.push(boomMap[`x=${bottom.x}y=${bottom.y}`]);
-                // }
-                // if(boomMap[`x=${left.x}y=${left.y}`]&&this.map[left.x][left.y].data.isBlock){
-                //     boomList.push(boomMap[`x=${left.x}y=${left.y}`]);
-                // }
-                // if(boomMap[`x=${right.x}y=${right.y}`]&&this.map[right.x][right.y].data.isBlock){
-                //     boomList.push(boomMap[`x=${right.x}y=${right.y}`]);
-                // }
             }
+        }
+        let exboomlist = new Array();
+        for (let i = 0; i < boomList.length; i++) {
+            let pos1 = cc.v2(boomList[i].x + 1, boomList[i].y);
+            let pos2 = cc.v2(boomList[i].x - 1, boomList[i].y);
+            let pos3 = cc.v2(boomList[i].x, boomList[i].y + 1);
+            let pos4 = cc.v2(boomList[i].x, boomList[i].y - 1);
+            if (this.isPosBlock(pos1)) {
+                exboomlist.push(new BoomData(pos1.x, pos1.y, false, 0));
+            }
+            if (this.isPosBlock(pos2)) {
+                exboomlist.push(new BoomData(pos2.x, pos2.y, false, 0));
+            }
+            if (this.isPosBlock(pos3)) {
+                exboomlist.push(new BoomData(pos3.x, pos3.y, false, 0));
+            }
+            if (this.isPosBlock(pos4)) {
+                exboomlist.push(new BoomData(pos3.x, pos4.y, false, 0));
+            }
+        }
+        let exboomMap: { [key: string]: BoomData } = {};
+        for (let p of exboomlist) {
+            exboomMap[`x=${p.x}y=${p.y}`] = p;
+        }
+        for (let k in exboomMap) {
+            let pos = exboomMap[k];
+            boomList.push(pos);
         }
         return boomList;
     }
@@ -548,8 +642,23 @@ export default class GameWorld extends cc.Component {
         }
         return mapdata[pos1.x][pos1.y].tileType == mapdata[pos2.x][pos2.y].tileType;
     }
-    isBlockOrEmptyType(tileType: string): boolean {
+    private isBlockOrEmptyType(tileType: string): boolean {
         if (tileType == '00' || tileType == 'b0') {
+            return true;
+        }
+        return false;
+    }
+    private isPosBlock(pos: cc.Vec2): boolean {
+        if (GameWorld.isPosIndexValid(pos)) {
+            if (this.isTypeBlock(this.map[pos.x][pos.y].data.tileType)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    private isTypeBlock(tileType: string): boolean {
+        if (tileType == 'b0') {
             return true;
         }
         return false;
@@ -580,7 +689,7 @@ export default class GameWorld extends cc.Component {
             if (this.canFill) {
                 this.fillTiles();
             }
-            Logic.isProcessing = this.boomList.length > 0 || this.isRandoming;
+            Logic.isProcessing = this.boomList.length > 0 || this.isRandoming || this.isTopDown;
         }
     }
     /**查看坐标是否有效 */
@@ -590,7 +699,7 @@ export default class GameWorld extends cc.Component {
     //获取地图里下标的坐标
     static getPosInMap(pos: cc.Vec2) {
         let x = GameWorld.MAPX + pos.x * GameWorld.TILE_SIZE + GameWorld.TILE_SIZE / 2;
-        let y = GameWorld.MAPY + pos.y * GameWorld.TILE_SIZE;
+        let y = GameWorld.MAPY + pos.y * GameWorld.TILE_SIZE - GameWorld.TILE_SIZE;
         return cc.v2(x, y);
     }
     //获取坐标在地图里的下标,canOuter:是否可以超出

@@ -15,9 +15,9 @@ export default class Logic extends cc.Component {
     static isPaused = false;
     static isProcessing = false;
     static score = 0;
-    static target = 10000;
-    static step =15;
-    static maxstep = 15;
+    static target = 100000000;
+    static step =99;
+    static maxstep = 99;
     //图片资源
     static spriteFrames: { [key: string]: cc.SpriteFrame } = null;
     // LIFE-CYCLE CALLBACKS:
