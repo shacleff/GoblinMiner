@@ -1,0 +1,61 @@
+{
+  "__type__": "cc.AnimationClip",
+  "_name": "BgCloudIdle",
+  "_objFlags": 0,
+  "_native": "",
+  "_duration": 5,
+  "sample": 60,
+  "speed": 0.2,
+  "wrapMode": 2,
+  "curveData": {
+    "paths": {
+      "c1": {
+        "props": {
+          "x": [
+            {
+              "frame": 0,
+              "value": -87.56600189208984
+            },
+            {
+              "frame": 2.5,
+              "value": 0
+            },
+            {
+              "frame": 4.5,
+              "value": 60,
+              "curve": "constant"
+            },
+            {
+              "frame": 5,
+              "value": -87.56600189208984
+            }
+          ]
+        }
+      },
+      "c2": {
+        "props": {
+          "x": [
+            {
+              "frame": 0,
+              "value": 0
+            },
+            {
+              "frame": 2.5,
+              "value": 57.792999267578125,
+              "curve": "constant"
+            },
+            {
+              "frame": 3.0166666666666666,
+              "value": -81.10199737548828
+            },
+            {
+              "frame": 5,
+              "value": 0
+            }
+          ]
+        }
+      }
+    }
+  },
+  "events": []
+}

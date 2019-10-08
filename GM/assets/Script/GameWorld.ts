@@ -50,6 +50,9 @@ export default class GameWorld extends cc.Component {
         cc.director.on(EventConstant.INIT_MAP, (event) => {
             this.initMap();
         })
+        cc.director.on(EventConstant.RED_BOOM_TILE, (event) => {
+            
+        })
         this.actorLayer = this.node.getChildByName('actorlayer');
         this.actorLayer.zIndex = 2000;
         this.initMap();
@@ -143,7 +146,10 @@ export default class GameWorld extends cc.Component {
     }
     /**地图下降 */
     downMap(){
+        Logic.level += 3;
+        Logic.step += 5;
         let speed = 0.4;
+        cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.FALL_DOWN } });
         this.isTopDown = true;
         for (let i = 0; i < this.map.length; i++) {
             for (let j = 0; j < this.map[0].length; j++) {
@@ -181,24 +187,6 @@ export default class GameWorld extends cc.Component {
             }
             this.isTopDown = false;
         },speed*1.5)
-        
-        // for (let i = 0; i < this.map.length; i++) {
-        //     for (let j = 0; j < line; j++) {
-        //         let pos = this.map[i][j].data.posIndex.clone();
-        //             this.map[i][j].data.posIndex = this.map[i][j+GameWorld.BLOCK_HEIGHT].data.posIndex.clone();
-        //             this.map[i][j+GameWorld.BLOCK_HEIGHT].data.posIndex = pos;
-        //             let temp = this.map[i][j];
-        //             this.map[i][j] = this.map[i][j+GameWorld.BLOCK_HEIGHT];
-        //             this.map[i][j+GameWorld.BLOCK_HEIGHT] = temp;
-        //             this.map[i][j+GameWorld.BLOCK_HEIGHT].updateTilePosition(true,()=>{});
-        //             this.map[i][j].updateTilePosition(true,()=>{});
-        //     }
-        // }
-        // for (let i = 0; i < this.map.length; i++) {
-        //     for (let j = 0; j < line; j++) {
-        //         this.map[i][j].initTile(TileData.getBlockTileData(i, j));
-        //     }
-        // }
     }
     /**检查地图是否可以消除 */
     checkMapCanBoom(): boolean {
@@ -347,22 +335,41 @@ export default class GameWorld extends cc.Component {
             //     cc.director.emit(EventConstant.GAME_OVER, { detail: { over: false } });
             // }
             let offset = 10;
-            let speed = 0.1;
+            let speed = 0.05;
             let p = boomList[i];
             let more = 1;
             switch (this.map[p.x][p.y].data.tileSpecial) {
                 case Tile.SPECIAL_NORMAL: break;
-                case Tile.SPECIAL_VERTICAL: more = 2; break;
-                case Tile.SPECIAL_HORIZONTAL: more = 2; break;
-                case Tile.SPECIAL_CROSS: more = 4; break;
-                case Tile.SPECIAL_FIVE: more = 8; break;
+                case Tile.SPECIAL_VERTICAL: more = 4; break;
+                case Tile.SPECIAL_HORIZONTAL: more = 4; break;
+                case Tile.SPECIAL_CROSS: more = 6; break;
+                case Tile.SPECIAL_FIVE: more = 10; break;
             }
             if(this.map[p.x][p.y].data.tileType == '05'){
                 Logic.oil +=more;
             }else if(this.map[p.x][p.y].data.tileType == '06'){
                 Logic.coin +=more;
             }else if(this.isTypeBlock(this.map[p.x][p.y].data.tileType)){
-                Logic.score +=100;
+            }else if(this.map[p.x][p.y].data.tileType == '01'){
+                Logic.redpower +=more;
+                if(Logic.redpower>Logic.maxredpower){
+                    Logic.redpower = Logic.maxredpower;
+                }
+            }else if(this.map[p.x][p.y].data.tileType == '02'){
+                Logic.bluepower +=more;
+                if(Logic.bluepower>Logic.maxbluepower){
+                    Logic.bluepower = Logic.maxbluepower;
+                }
+            }else if(this.map[p.x][p.y].data.tileType == '03'){
+                Logic.purplepower +=more;
+                if(Logic.purplepower>Logic.maxpurplepower){
+                    Logic.purplepower = Logic.maxpurplepower;
+                }
+            }else if(this.map[p.x][p.y].data.tileType == '04'){
+                Logic.greenpower +=more;
+                if(Logic.greenpower>Logic.maxgreenpower){
+                    Logic.greenpower = Logic.maxgreenpower;
+                }
             }
             this.map[p.x][p.y].node.runAction(cc.sequence(
                 cc.moveBy(speed, 0, offset)

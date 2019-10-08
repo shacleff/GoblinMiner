@@ -14,7 +14,7 @@ const { ccclass, property } = cc._decorator;
 export default class Logic extends cc.Component {
     static isPaused = false;
     static isProcessing = false;
-    static score = 0;
+    static level = 0;
     static coin = 0;
     static oil = 0;
     static target = 100000000;
@@ -22,6 +22,15 @@ export default class Logic extends cc.Component {
     static maxstep = 20;
     //图片资源
     static spriteFrames: { [key: string]: cc.SpriteFrame } = null;
+    static redpower = 0;
+    static bluepower = 0;
+    static purplepower = 0;
+    static greenpower = 0;
+    static maxredpower = 20;
+    static maxbluepower = 20;
+    static maxpurplepower = 20;
+    static maxgreenpower = 20;
+    static maxoilpower = 50;
     // LIFE-CYCLE CALLBACKS:
 
     onLoad() {
@@ -45,7 +54,7 @@ export default class Logic extends cc.Component {
     }
     static reset(target:number,step:number){
         Logic.isProcessing = false;
-        Logic.score = 0;
+        Logic.level = 0;
         Logic.coin = 0;
         Logic.oil = 0;
         Logic.step = step;
