@@ -19,7 +19,7 @@ export default class NewClass extends cc.Component {
     // onLoad () {}
 
     startGame(){
-        cc.director.loadScene('main');
+        cc.director.loadScene('loading');
     }
 
     // update (dt) {}

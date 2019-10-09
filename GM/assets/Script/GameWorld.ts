@@ -512,7 +512,9 @@ export default class GameWorld extends cc.Component {
             }
         }
         let exboomlist = new Array();
+        //添加四周爆掉的砖块
         for (let i = 0; i < boomList.length; i++) {
+            let pos0 = cc.v2(boomList[i].x, boomList[i].y);
             let pos1 = cc.v2(boomList[i].x + 1, boomList[i].y);
             let pos2 = cc.v2(boomList[i].x - 1, boomList[i].y);
             let pos3 = cc.v2(boomList[i].x, boomList[i].y + 1);
@@ -528,6 +530,9 @@ export default class GameWorld extends cc.Component {
             }
             if (this.isPosBlock(pos4)) {
                 exboomlist.push(new BoomData(pos3.x, pos4.y, false, 0));
+            }
+            if(this.map[pos0.x][pos0.y].data.tileSpecial == Tile.SPECIAL_HORIZONTAL){
+                
             }
         }
         let exboomMap: { [key: string]: BoomData } = {};
