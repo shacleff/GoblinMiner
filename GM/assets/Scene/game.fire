@@ -183,7 +183,7 @@
       "array": [
         0,
         0,
-        452.9312744140625,
+        232.0948028564453,
         0,
         0,
         0,
@@ -1751,7 +1751,7 @@
       "array": [
         0,
         0,
-        452.9312744140625,
+        232.0948028564453,
         0,
         0,
         0,
@@ -4948,8 +4948,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 376,
-      "height": 200
+      "width": 720,
+      "height": 128
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -4960,7 +4960,7 @@
       "__type__": "TypedArray",
       "ctor": "Float32Array",
       "array": [
-        -141.322998046875,
+        0,
         211.08999633789062,
         0,
         0,
@@ -5026,7 +5026,7 @@
       "__type__": "TypedArray",
       "ctor": "Float32Array",
       "array": [
-        -156,
+        -288,
         0,
         0,
         0,
@@ -5406,7 +5406,7 @@
       "__type__": "TypedArray",
       "ctor": "Float32Array",
       "array": [
-        -52,
+        -184,
         0,
         0,
         0,
@@ -5786,7 +5786,7 @@
       "__type__": "TypedArray",
       "ctor": "Float32Array",
       "array": [
-        52,
+        -80,
         0,
         0,
         0,
@@ -6166,7 +6166,7 @@
       "__type__": "TypedArray",
       "ctor": "Float32Array",
       "array": [
-        156,
+        24,
         0,
         0,
         0,
@@ -6515,10 +6515,10 @@
     "_enabled": true,
     "_layoutSize": {
       "__type__": "cc.Size",
-      "width": 376,
-      "height": 200
+      "width": 720,
+      "height": 128
     },
-    "_resize": 1,
+    "_resize": 0,
     "_N$layoutType": 1,
     "_N$padding": 0,
     "_N$cellSize": {
@@ -6527,8 +6527,8 @@
       "height": 40
     },
     "_N$startAxis": 0,
-    "_N$paddingLeft": 0,
-    "_N$paddingRight": 0,
+    "_N$paddingLeft": 40,
+    "_N$paddingRight": 40,
     "_N$paddingTop": 0,
     "_N$paddingBottom": 0,
     "_N$spacingX": 40,
