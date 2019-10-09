@@ -426,7 +426,7 @@ export default class GameWorld extends cc.Component {
         let count = 0;
         for (let i = 0; i < emptyList.length; i++) {
             let p = emptyList[i];
-            this.map[p.x][p.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE*2))), cc.fadeIn(this.speed), cc.moveTo(this.speed *(2+p.y/2), GameWorld.getPosInMap(cc.v2(p.x, p.y))).easing(cc.easeBackIn()), cc.callFunc(() => {
+            this.map[p.x][p.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE*2))), cc.fadeIn(this.speed), cc.moveTo(this.speed *(1+p.y/2), GameWorld.getPosInMap(cc.v2(p.x, p.y))).easing(cc.easeBackIn()), cc.callFunc(() => {
                 count++;
                 if (count == emptyList.length) {
                     let boomList = this.getBoomList();

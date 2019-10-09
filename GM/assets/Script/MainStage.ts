@@ -11,15 +11,17 @@
 const {ccclass, property} = cc._decorator;
 
 @ccclass
-export default class NewClass extends cc.Component {
-
+export default class MainStage extends cc.Component {
 
     // LIFE-CYCLE CALLBACKS:
 
     // onLoad () {}
 
-    startGame(){
-        cc.director.loadScene('main');
+    start () {
+
+    }
+    gotoTheMine(){
+        cc.director.loadScene('mine');
     }
 
     // update (dt) {}
