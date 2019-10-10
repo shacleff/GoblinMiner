@@ -372,6 +372,12 @@ export default class GameWorld extends cc.Component {
                 }
             }
             this.map[p.x][p.y].node.runAction(cc.sequence(
+                cc.callFunc(()=>{
+                    if(p.isExtraBoom&&!this.isPosBlock(cc.v2(p.x,p.y))){
+                        this.map[p.x][p.y].showBoomEffect();
+                    }
+                }),
+                cc.delayTime(p.isExtraBoom?this.speed*4:0),
                 cc.moveBy(speed, 0, offset)
                 , cc.moveBy(speed, 0, -offset)
                 , cc.moveBy(speed, 0, offset)
@@ -380,7 +386,7 @@ export default class GameWorld extends cc.Component {
                 , cc.moveBy(speed / 2, -offset, 0)
                 , cc.moveBy(speed / 2, offset, 0)
                 , cc.moveBy(speed / 2, -offset, 0)
-                , cc.fadeOut(this.speed)
+                , cc.fadeOut(speed)
                 , cc.callFunc(() => {
                     if (p.tileSpecial > 0 && p.isCenter) {
                         this.map[p.x][p.y].data.tileSpecial = p.tileSpecial;
@@ -505,12 +511,14 @@ export default class GameWorld extends cc.Component {
                 boomMap[`x=${p.x}y=${p.y}`] = p;
             }
         }
+        //去重
         for (let k in boomMap) {
             let pos = boomMap[k];
             if (!this.map[pos.x][pos.y].data.isBlock) {
                 boomList.push(pos);
             }
         }
+        boomList = this.getExBoomList(boomList);
         let exboomlist = new Array();
         //添加四周爆掉的砖块
         for (let i = 0; i < boomList.length; i++) {
@@ -519,32 +527,85 @@ export default class GameWorld extends cc.Component {
             let pos2 = cc.v2(boomList[i].x - 1, boomList[i].y);
             let pos3 = cc.v2(boomList[i].x, boomList[i].y + 1);
             let pos4 = cc.v2(boomList[i].x, boomList[i].y - 1);
-            if (this.isPosBlock(pos1)) {
-                exboomlist.push(new BoomData(pos1.x, pos1.y, false, 0));
+            if (this.isPosBlock(pos1)&&!this.isPosBlock(pos0)) {
+                exboomlist.push(new BoomData(pos1.x, pos1.y, false, 0,boomList[i].isExtraBoom));
             }
-            if (this.isPosBlock(pos2)) {
-                exboomlist.push(new BoomData(pos2.x, pos2.y, false, 0));
+            if (this.isPosBlock(pos2)&&!this.isPosBlock(pos0)) {
+                exboomlist.push(new BoomData(pos2.x, pos2.y, false, 0,boomList[i].isExtraBoom));
             }
-            if (this.isPosBlock(pos3)) {
-                exboomlist.push(new BoomData(pos3.x, pos3.y, false, 0));
+            if (this.isPosBlock(pos3)&&!this.isPosBlock(pos0)) {
+                exboomlist.push(new BoomData(pos3.x, pos3.y, false, 0,boomList[i].isExtraBoom));
             }
-            if (this.isPosBlock(pos4)) {
-                exboomlist.push(new BoomData(pos3.x, pos4.y, false, 0));
-            }
-            if(this.map[pos0.x][pos0.y].data.tileSpecial == Tile.SPECIAL_HORIZONTAL){
-                
+            if (this.isPosBlock(pos4)&&!this.isPosBlock(pos0)) {
+                exboomlist.push(new BoomData(pos3.x, pos4.y, false, 0,boomList[i].isExtraBoom));
             }
         }
         let exboomMap: { [key: string]: BoomData } = {};
         for (let p of exboomlist) {
             exboomMap[`x=${p.x}y=${p.y}`] = p;
         }
+        //去重
         for (let k in exboomMap) {
             let pos = exboomMap[k];
             boomList.push(pos);
         }
         return boomList;
     }
+    getExBoomList(boomList: BoomData[]):BoomData[]{
+        let boomMap: { [key: string]: BoomData } = {};
+        let exboomlist = new Array();
+        for (let p of boomList) {
+            boomMap[`x=${p.x}y=${p.y}`] = p;
+        }
+        let hasSpecial = false;
+        for(let k in boomMap){
+            let p = boomMap[k];
+            if(this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_VERTICAL){
+                for(let i = 0;i < this.map.length;i++){
+                    if(!boomMap[`x=${i}y=${p.y}`]&&!this.isPosBlock(cc.v2(i,p.y))){
+                        hasSpecial = true;
+                        exboomlist.push(new BoomData(i, p.y, false, this.map[i][p.y].data.tileSpecial,true));
+                    }
+                }
+            }
+            if(this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_HORIZONTAL){
+                for(let j = 0;j < this.map[0].length;j++){
+                    if(!boomMap[`x=${p.x}y=${j}`]&&!this.isPosBlock(cc.v2(p.x, j))){
+                        hasSpecial = true;
+                        exboomlist.push(new BoomData(p.x, j, false, this.map[p.x][j].data.tileSpecial,true));
+                    }
+                }
+            }
+            if(this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_CROSS){
+                let indexs = [cc.v2(p.x-2,p.y),cc.v2(p.x-1,p.y),cc.v2(p.x+1,p.y),cc.v2(p.x+2,p.y)
+                    ,cc.v2(p.x,p.y-2),cc.v2(p.x,p.y-1),cc.v2(p.x,p.y+1),cc.v2(p.x,p.y+2)
+                    ,cc.v2(p.x+1,p.y+1),cc.v2(p.x+1,p.y-1),cc.v2(p.x-1,p.y+1),cc.v2(p.x-1,p.y+1)]
+                for(let i = 0;i < indexs.length;i++){
+                    if(!boomMap[`x=${indexs[i].x}y=${indexs[i].y}`]&&GameWorld.isPosIndexValid(indexs[i])&&!this.isPosBlock(indexs[i])){
+                        hasSpecial = true;
+                        exboomlist.push(new BoomData(indexs[i].x, indexs[i].y, false, this.map[indexs[i].x][indexs[i].y].data.tileSpecial,true));
+                    }
+                }
+            }
+            if(this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_FIVE){
+                for(let i = 0;i < this.map.length;i++){
+                    for(let j = 0;j < this.map[0].length;j++){
+                        if(!boomMap[`x=${i}y=${j}`]&&!this.isPosBlock(cc.v2(i, j))&&this.isTypeEqual(cc.v2(p.x,p.y),cc.v2(i,j))){
+                            hasSpecial = true;
+                            exboomlist.push(new BoomData(i, j, false, this.map[i][j].data.tileSpecial,true));
+                        }
+                    }
+                }
+                
+            }
+        }
+        boomList = boomList.concat(exboomlist)
+        if(hasSpecial){
+            boomList = this.getExBoomList(boomList);
+        }
+        return boomList;
+    }
+    /**获取相同可爆炸方块 */
     getTempBoomList(boomList: BoomData[], templist: cc.Vec2[], isVertical: boolean, dynamicList?: cc.Vec2[]): BoomData[] {
         let type = Tile.SPECIAL_NORMAL;
         let hasCenter = false;
@@ -561,6 +622,7 @@ export default class GameWorld extends cc.Component {
             for (let i = 0; i < templist.length; i++) {
                 let isCenter = false;
                 let p = cc.v2(templist[i].x, templist[i].y);
+                //设置手动交换的中心点
                 if (dynamicList) {
                     for (let temp of dynamicList) {
                         if (temp.equals(p)) {
@@ -569,10 +631,11 @@ export default class GameWorld extends cc.Component {
                         }
                     }
                 }
+                //如果不是手动交换设置中间为中心点
                 if (!isCenter) {
                     isCenter = i == Math.floor(templist.length / 2);
                 }
-                boomList.push(new BoomData(templist[i].x, templist[i].y, isCenter && !hasCenter && templist.length > 3, type));
+                boomList.push(new BoomData(templist[i].x, templist[i].y, isCenter && !hasCenter && templist.length > 3, type,false));
                 if (isCenter) {
                     hasCenter = true;
                 }

@@ -22,6 +22,7 @@ export default class Tile extends cc.Component {
     data:TileData;
     sprite:cc.Sprite;
     glow:cc.Node;
+    effectboom:cc.Node;
     static readonly  SPECIAL_NORMAL = 0;
     static readonly  SPECIAL_VERTICAL = 1;
     static readonly  SPECIAL_HORIZONTAL = 2;
@@ -33,7 +34,9 @@ export default class Tile extends cc.Component {
     onLoad () {
         this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
         this.glow = this.node.getChildByName('glow');
+        this.effectboom = this.node.getChildByName('effectboom');
         this.glow.opacity = 0;
+        this.effectboom.opacity = 0;
         this.node.on(cc.Node.EventType.TOUCH_START,()=>{
             if(!Logic.isPaused){
                 this.glow.opacity = 80;
@@ -67,6 +70,9 @@ export default class Tile extends cc.Component {
         this.data =data;
         this.changeRes();
         this.node.position = GameWorld.getPosInMap(data.posIndex);
+    }
+    showBoomEffect(){
+        this.effectboom.runAction(cc.sequence(cc.fadeIn(0.1),cc.fadeOut(0.2)));
     }
     updateTile(){
         this.changeRes();

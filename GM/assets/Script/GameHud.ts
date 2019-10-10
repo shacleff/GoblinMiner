@@ -87,6 +87,7 @@ export default class NewClass extends cc.Component {
             Logic.oil-=3;
             Logic.step+=2;
             cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.SKILL_001 } });
+            this.changeOil();
         }
     }
     boom(){
