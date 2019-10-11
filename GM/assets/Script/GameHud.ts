@@ -85,7 +85,7 @@ export default class NewClass extends cc.Component {
     changeOil(){
         if(Logic.oil>=3){
             Logic.oil-=3;
-            Logic.step+=2;
+            Logic.step+=1;
             cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.SKILL_001 } });
             this.changeOil();
         }
@@ -112,9 +112,9 @@ export default class NewClass extends cc.Component {
     }
 
     update (dt) {
-        this.steplabel.string = `步数：${Logic.step}`;
-        this.levellabel.string = `深度：${Logic.level}`;
-        this.coinlabel.string = `金币：${Logic.coin}`;
+        this.steplabel.string = `${Logic.step}`;
+        this.levellabel.string = `Lv：${Logic.level}`;
+        this.coinlabel.string = `：${Logic.coin}`;
         this.redlabel.string = `${Logic.redpower}/${Logic.maxredpower}`
         this.bluelabel.string = `${Logic.bluepower}/${Logic.maxbluepower}`
         this.purplelabel.string = `${Logic.purplepower}/${Logic.maxpurplepower}`

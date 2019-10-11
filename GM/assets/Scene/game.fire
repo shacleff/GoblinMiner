@@ -183,7 +183,7 @@
       "array": [
         0,
         0,
-        232.0948028564453,
+        452.9312744140625,
         0,
         0,
         0,
@@ -439,7 +439,7 @@
       "array": [
         0,
         0,
-        232.0948028564453,
+        452.9312744140625,
         0,
         0,
         0,
@@ -863,15 +863,15 @@
     "_opacity": 255,
     "_color": {
       "__type__": "cc.Color",
-      "r": 255,
-      "g": 255,
-      "b": 255,
+      "r": 221,
+      "g": 186,
+      "b": 0,
       "a": 255
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 164.49,
-      "height": 50.4
+      "width": 111.23,
+      "height": 126
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -882,8 +882,8 @@
       "__type__": "TypedArray",
       "ctor": "Float32Array",
       "array": [
-        -48.29999923706055,
-        580,
+        187.72500610351562,
+        440.8699951171875,
         0,
         0,
         0,
@@ -921,10 +921,10 @@
       }
     ],
     "_useOriginalSize": false,
-    "_string": "步数：20",
-    "_N$string": "步数：20",
-    "_fontSize": 40,
-    "_lineHeight": 40,
+    "_string": "20",
+    "_N$string": "20",
+    "_fontSize": 100,
+    "_lineHeight": 100,
     "_enableWrapText": true,
     "_N$file": null,
     "_isSystemFontUsed": true,
@@ -955,9 +955,9 @@
     "_opacity": 255,
     "_color": {
       "__type__": "cc.Color",
-      "r": 255,
-      "g": 255,
-      "b": 255,
+      "r": 173,
+      "g": 173,
+      "b": 173,
       "a": 255
     },
     "_contentSize": {
@@ -1051,8 +1051,8 @@
     "_opacity": 255,
     "_color": {
       "__type__": "cc.Color",
-      "r": 255,
-      "g": 245,
+      "r": 156,
+      "g": 150,
       "b": 0,
       "a": 255
     },
@@ -1113,9 +1113,9 @@
     "_opacity": 255,
     "_color": {
       "__type__": "cc.Color",
-      "r": 255,
-      "g": 255,
-      "b": 255,
+      "r": 199,
+      "g": 199,
+      "b": 199,
       "a": 255
     },
     "_contentSize": {

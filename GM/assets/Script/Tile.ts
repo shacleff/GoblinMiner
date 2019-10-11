@@ -72,7 +72,7 @@ export default class Tile extends cc.Component {
         this.node.position = GameWorld.getPosInMap(data.posIndex);
     }
     showBoomEffect(){
-        this.effectboom.runAction(cc.sequence(cc.fadeIn(0.1),cc.fadeOut(0.2)));
+        this.effectboom.runAction(cc.sequence(cc.fadeIn(0.1),cc.fadeOut(0.5)));
     }
     updateTile(){
         this.changeRes();

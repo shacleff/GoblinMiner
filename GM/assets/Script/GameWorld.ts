@@ -147,7 +147,7 @@ export default class GameWorld extends cc.Component {
     /**地图下降 */
     downMap(){
         Logic.level += 3;
-        Logic.step += 5;
+        Logic.step += 3;
         let speed = 0.4;
         cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.FALL_DOWN } });
         this.isTopDown = true;
@@ -347,6 +347,9 @@ export default class GameWorld extends cc.Component {
             }
             if(this.map[p.x][p.y].data.tileType == '05'){
                 Logic.oil +=more;
+                if(Logic.oil>Logic.maxoilpower){
+                    Logic.oil=Logic.maxoilpower;
+                }
             }else if(this.map[p.x][p.y].data.tileType == '06'){
                 Logic.coin +=more;
             }else if(this.isTypeBlock(this.map[p.x][p.y].data.tileType)){
@@ -377,7 +380,7 @@ export default class GameWorld extends cc.Component {
                         this.map[p.x][p.y].showBoomEffect();
                     }
                 }),
-                cc.delayTime(p.isExtraBoom?this.speed*4:0),
+                cc.delayTime(p.isExtraBoom?this.speed*5:0),
                 cc.moveBy(speed, 0, offset)
                 , cc.moveBy(speed, 0, -offset)
                 , cc.moveBy(speed, 0, offset)
@@ -553,7 +556,6 @@ export default class GameWorld extends cc.Component {
     }
     getExBoomList(boomList: BoomData[]):BoomData[]{
         let boomMap: { [key: string]: BoomData } = {};
-        let exboomlist = new Array();
         for (let p of boomList) {
             boomMap[`x=${p.x}y=${p.y}`] = p;
         }
@@ -564,7 +566,9 @@ export default class GameWorld extends cc.Component {
                 for(let i = 0;i < this.map.length;i++){
                     if(!boomMap[`x=${i}y=${p.y}`]&&!this.isPosBlock(cc.v2(i,p.y))){
                         hasSpecial = true;
-                        exboomlist.push(new BoomData(i, p.y, false, this.map[i][p.y].data.tileSpecial,true));
+                        boomMap[`x=${i}y=${p.y}`]= new BoomData(i, p.y, false, this.map[i][p.y].data.tileSpecial,true);
+                    }else if(boomMap[`x=${i}y=${p.y}`]){
+                        boomMap[`x=${i}y=${p.y}`].isExtraBoom = true;
                     }
                 }
             }
@@ -572,7 +576,9 @@ export default class GameWorld extends cc.Component {
                 for(let j = 0;j < this.map[0].length;j++){
                     if(!boomMap[`x=${p.x}y=${j}`]&&!this.isPosBlock(cc.v2(p.x, j))){
                         hasSpecial = true;
-                        exboomlist.push(new BoomData(p.x, j, false, this.map[p.x][j].data.tileSpecial,true));
+                        boomMap[`x=${p.x}y=${j}`] = new BoomData(p.x, j, false, this.map[p.x][j].data.tileSpecial,true);
+                    }else if(boomMap[`x=${p.x}y=${j}`]){
+                        boomMap[`x=${p.x}y=${j}`].isExtraBoom = true;
                     }
                 }
             }
@@ -583,7 +589,9 @@ export default class GameWorld extends cc.Component {
                 for(let i = 0;i < indexs.length;i++){
                     if(!boomMap[`x=${indexs[i].x}y=${indexs[i].y}`]&&GameWorld.isPosIndexValid(indexs[i])&&!this.isPosBlock(indexs[i])){
                         hasSpecial = true;
-                        exboomlist.push(new BoomData(indexs[i].x, indexs[i].y, false, this.map[indexs[i].x][indexs[i].y].data.tileSpecial,true));
+                        boomMap[`x=${indexs[i].x}y=${indexs[i].y}`] = new BoomData(indexs[i].x, indexs[i].y, false, this.map[indexs[i].x][indexs[i].y].data.tileSpecial,true);
+                    }else if(boomMap[`x=${indexs[i].x}y=${indexs[i].y}`]){
+                        boomMap[`x=${indexs[i].x}y=${indexs[i].y}`].isExtraBoom = true;
                     }
                 }
             }
@@ -592,14 +600,23 @@ export default class GameWorld extends cc.Component {
                     for(let j = 0;j < this.map[0].length;j++){
                         if(!boomMap[`x=${i}y=${j}`]&&!this.isPosBlock(cc.v2(i, j))&&this.isTypeEqual(cc.v2(p.x,p.y),cc.v2(i,j))){
                             hasSpecial = true;
-                            exboomlist.push(new BoomData(i, j, false, this.map[i][j].data.tileSpecial,true));
+                            boomMap[`x=${i}y=${j}`]=new BoomData(i, j, false, this.map[i][j].data.tileSpecial,true);
+                        }else if(boomMap[`x=${i}y=${j}`]){
+                            boomMap[`x=${i}y=${j}`].isExtraBoom = true;
                         }
                     }
                 }
                 
             }
         }
-        boomList = boomList.concat(exboomlist)
+        //去重
+        boomList = [];
+        for (let k in boomMap) {
+            let pos = boomMap[k];
+            if (!this.map[pos.x][pos.y].data.isBlock) {
+                boomList.push(pos);
+            }
+        }
         if(hasSpecial){
             boomList = this.getExBoomList(boomList);
         }
