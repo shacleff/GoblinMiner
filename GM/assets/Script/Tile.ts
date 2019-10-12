@@ -23,6 +23,7 @@ export default class Tile extends cc.Component {
     sprite:cc.Sprite;
     glow:cc.Node;
     effectboom:cc.Node;
+    effectblockboom:cc.Node;
     static readonly  SPECIAL_NORMAL = 0;
     static readonly  SPECIAL_VERTICAL = 1;
     static readonly  SPECIAL_HORIZONTAL = 2;
@@ -35,8 +36,10 @@ export default class Tile extends cc.Component {
         this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
         this.glow = this.node.getChildByName('glow');
         this.effectboom = this.node.getChildByName('effectboom');
+        this.effectblockboom = this.node.getChildByName('effectblockboom');
         this.glow.opacity = 0;
         this.effectboom.opacity = 0;
+        this.effectblockboom.opacity = 0;
         this.node.on(cc.Node.EventType.TOUCH_START,()=>{
             if(!Logic.isPaused){
                 this.glow.opacity = 80;
@@ -72,7 +75,12 @@ export default class Tile extends cc.Component {
         this.node.position = GameWorld.getPosInMap(data.posIndex);
     }
     showBoomEffect(){
-        this.effectboom.runAction(cc.sequence(cc.fadeIn(0.1),cc.fadeOut(0.5)));
+        this.effectboom.active = true;
+        this.effectboom.runAction(cc.sequence(cc.fadeIn(0.1),cc.fadeOut(0.5),cc.callFunc(()=>{this.effectboom.active = false;})));
+    }
+    showBoomBlockEffect(){
+        this.effectblockboom.active = true;
+        this.effectblockboom.runAction(cc.sequence(cc.fadeIn(0.1),cc.fadeOut(0.5),cc.callFunc(()=>{this.effectblockboom.active = false;})));
     }
     updateTile(){
         this.changeRes();

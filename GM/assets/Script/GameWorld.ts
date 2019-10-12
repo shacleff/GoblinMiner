@@ -93,7 +93,9 @@ export default class GameWorld extends cc.Component {
         let boomList = this.getBoomList();
         for (let i = 0; i < boomList.length; i++) {
             let p = boomList[i];
-            this.map[p.x][p.y].initTile(TileData.getRandomTileData(p.x, p.y))
+            if(!this.isPosBlock(cc.v2(p.x,p.y))){
+                this.map[p.x][p.y].initTile(TileData.getRandomTileData(p.x, p.y))
+            }
         }
         if (boomList.length > 0) {
             this.checkMapValid();
@@ -379,6 +381,9 @@ export default class GameWorld extends cc.Component {
                     if(p.isExtraBoom&&!this.isPosBlock(cc.v2(p.x,p.y))){
                         this.map[p.x][p.y].showBoomEffect();
                     }
+                    if(this.isPosBlock(cc.v2(p.x,p.y))){
+                        this.map[p.x][p.y].showBoomBlockEffect();
+                    }
                 }),
                 cc.delayTime(p.isExtraBoom?this.speed*5:0),
                 cc.moveBy(speed, 0, offset)
@@ -418,7 +423,7 @@ export default class GameWorld extends cc.Component {
         for (let i = 0; i < fallList.length; i++) {
             let p = fallList[i];
             this.switchTileData(cc.v2(p.x, p.y), cc.v2(p.x, p.y - p.z));
-            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed), cc.moveTo(this.speed*p.z, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()), cc.callFunc(() => {
+            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed*p.y/2), cc.moveTo(this.speed*p.z, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()), cc.callFunc(() => {
                 count++;
                 if (count == fallList.length) {
                     this.canFill = true;
@@ -435,13 +440,18 @@ export default class GameWorld extends cc.Component {
         let count = 0;
         for (let i = 0; i < emptyList.length; i++) {
             let p = emptyList[i];
-            this.map[p.x][p.y].node.runAction(cc.sequence(cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE*2))), cc.fadeIn(this.speed), cc.moveTo(this.speed *(1+p.y/2), GameWorld.getPosInMap(cc.v2(p.x, p.y))).easing(cc.easeBackIn()), cc.callFunc(() => {
+            this.map[p.x][p.y].node.runAction(cc.sequence(cc.delayTime(this.speed*p.y/2),cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE*2))), cc.fadeIn(this.speed), cc.moveTo(this.speed *(1+p.y/2), GameWorld.getPosInMap(cc.v2(p.x, p.y))).easing(cc.easeBackIn()), cc.callFunc(() => {
                 count++;
                 if (count == emptyList.length) {
                     let boomList = this.getBoomList();
                     this.boomList = boomList;
                     this.boomTiles(boomList);
                     if (boomList.length < 1 && Logic.step < 1) {
+                        Logic.profile.data.coins += Logic.coin;
+                        if(Logic.level - Logic.profile.data.level>10){
+                            Logic.profile.data.level = Logic.level; 
+                        }
+                        Logic.profile.saveData();
                         cc.director.emit(EventConstant.GAME_OVER, { detail: { over: true } });
                     } else if (boomList.length < 1 && !this.checkMapCanBoom()) {
                         this.scheduleOnce(() => {

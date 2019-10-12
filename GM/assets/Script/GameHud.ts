@@ -76,6 +76,10 @@ export default class NewClass extends cc.Component {
             Logic.reset(Logic.target,Logic.maxstep);
         }
     }
+    goHome(){
+        Logic.reset(Logic.target,Logic.maxstep);
+        cc.director.loadScene('main');
+    }
     gameOver(over:boolean){
         this.dialogPlayer.spriteFrame = Logic.spriteFrames[over?'player4':'player']
         this.againDialog.active = true;

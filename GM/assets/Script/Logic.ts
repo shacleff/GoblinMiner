@@ -1,3 +1,5 @@
+import ProfileManager from "./manager/ProfileManager";
+
 // Learn TypeScript:
 //  - [Chinese] https://docs.cocos.com/creator/manual/zh/scripting/typescript.html
 //  - [English] http://www.cocos2d-x.org/docs/creator/manual/en/scripting/typescript.html
@@ -18,8 +20,8 @@ export default class Logic extends cc.Component {
     static coin = 0;
     static oil = 0;
     static target = 100000000;
-    static step =20;
-    static maxstep = 20;
+    static step =15;
+    static maxstep = 15;
     //图片资源
     static spriteFrames: { [key: string]: cc.SpriteFrame } = null;
     static redpower = 0;
@@ -31,10 +33,11 @@ export default class Logic extends cc.Component {
     static maxpurplepower = 20;
     static maxgreenpower = 20;
     static maxoilpower = 50;
+    static profile:ProfileManager = new ProfileManager();
     // LIFE-CYCLE CALLBACKS:
 
     onLoad() {
-        cc.game.setFrameRate(45);
+        cc.game.setFrameRate(60);
         cc.game.addPersistRootNode(this.node);
         cc.view.enableAntiAlias(false);
         // cc.director.setDisplayStats(false);
@@ -54,9 +57,13 @@ export default class Logic extends cc.Component {
     }
     static reset(target:number,step:number){
         Logic.isProcessing = false;
-        Logic.level = 0;
-        Logic.coin = 0;
+        Logic.level = Logic.profile.data.level;
+        Logic.coin = Logic.profile.data.coins;
         Logic.oil = 0;
+        Logic.redpower = 0;
+        Logic.bluepower = 0;
+        Logic.greenpower = 0;
+        Logic.purplepower = 0;
         Logic.step = step;
         Logic.maxstep = step;
         Logic.target = target;

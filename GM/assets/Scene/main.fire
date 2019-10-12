@@ -180,7 +180,7 @@
       "array": [
         0,
         0,
-        232.0948028564453,
+        452.9312744140625,
         0,
         0,
         0,
@@ -373,7 +373,7 @@
       "ctor": "Float32Array",
       "array": [
         0,
-        -232.5570068359375,
+        282.15301513671875,
         0,
         0,
         0,
@@ -838,7 +838,7 @@
       "ctor": "Float32Array",
       "array": [
         0,
-        -325.5790100097656,
+        183.79800415039062,
         0,
         0,
         0,
@@ -931,8 +931,8 @@
       "__type__": "TypedArray",
       "ctor": "Float32Array",
       "array": [
-        24.743009567260742,
-        -387.052978515625,
+        24.743000030517578,
+        119.65699768066406,
         0,
         0,
         0,
@@ -1026,7 +1026,7 @@
       "ctor": "Float32Array",
       "array": [
         0,
-        -143.11199951171875,
+        403.60101318359375,
         0,
         0,
         0,
@@ -1120,7 +1120,7 @@
       "ctor": "Float32Array",
       "array": [
         0,
-        -100,
+        430.7120056152344,
         0,
         0,
         0,
@@ -1214,7 +1214,7 @@
       "ctor": "Float32Array",
       "array": [
         202.97500610351562,
-        -171.16600036621094,
+        324.8760070800781,
         0,
         0,
         0,
@@ -1314,7 +1314,7 @@
       "ctor": "Float32Array",
       "array": [
         295.2699890136719,
-        -507.2690124511719,
+        -2.121000051498413,
         0,
         0,
         0,
@@ -1504,9 +1504,9 @@
     "_srcBlendFactor": 770,
     "_dstBlendFactor": 771,
     "_spriteFrame": {
-      "__uuid__": "5ee11ad7-4fa0-44fc-a217-bd718cd632d3"
+      "__uuid__": "b1892ebe-967d-435f-ac21-7ba8ae56e5ac"
     },
-    "_type": 0,
+    "_type": 1,
     "_sizeMode": 0,
     "_fillType": 0,
     "_fillCenter": {
@@ -1596,7 +1596,7 @@
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 200,
-      "height": 80
+      "height": 150
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -1608,7 +1608,7 @@
       "ctor": "Float32Array",
       "array": [
         0,
-        0,
+        -239.7779998779297,
         0,
         0,
         0,
@@ -1657,15 +1657,15 @@
     "_opacity": 255,
     "_color": {
       "__type__": "cc.Color",
-      "r": 255,
-      "g": 255,
-      "b": 255,
+      "r": 37,
+      "g": 37,
+      "b": 37,
       "a": 255
     },
     "_contentSize": {
       "__type__": "cc.Size",
       "width": 200,
-      "height": 80
+      "height": 150
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -1685,7 +1685,7 @@
         1,
         1,
         1,
-        1
+        0
       ]
     },
     "_eulerAngles": {
@@ -1719,15 +1719,15 @@
     "_opacity": 255,
     "_color": {
       "__type__": "cc.Color",
-      "r": 0,
-      "g": 0,
-      "b": 0,
+      "r": 255,
+      "g": 255,
+      "b": 255,
       "a": 255
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 100,
-      "height": 40
+      "width": 120,
+      "height": 180.8
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -1777,8 +1777,8 @@
       }
     ],
     "_useOriginalSize": false,
-    "_string": "矿区",
-    "_N$string": "矿区",
+    "_string": "去矿区\n↓ ↓ ↓",
+    "_N$string": "去矿区\n↓ ↓ ↓",
     "_fontSize": 40,
     "_lineHeight": 80,
     "_enableWrapText": false,
@@ -1869,8 +1869,8 @@
     ],
     "_N$interactable": true,
     "_N$enableAutoGrayEffect": false,
-    "_N$transition": 2,
-    "transition": 2,
+    "_N$transition": 3,
+    "transition": 3,
     "_N$normalColor": {
       "__type__": "cc.Color",
       "r": 230,
