@@ -2,6 +2,7 @@ import Logic from "./Logic";
 import { EventConstant } from "./EventConstant";
 import Utils from "./utils/Utils";
 import AudioPlayer from "./utils/AudioPlayer";
+import Skill from "./Skill";
 
 // Learn TypeScript:
 //  - [Chinese] https://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -44,6 +45,7 @@ export default class NewClass extends cc.Component {
     skill02:cc.Node = null;
     skill03:cc.Node = null;
     skill04:cc.Node = null;
+    
     // LIFE-CYCLE CALLBACKS:
 
     onLoad () {
@@ -94,10 +96,11 @@ export default class NewClass extends cc.Component {
             this.changeOil();
         }
     }
-    boom(){
-        if(Logic.redpower>=6){
-            Logic.redpower -= 6;
-        }
+    collectOil(){
+        cc.director.emit(EventConstant.USE_SKILL, { detail: { type: Skill.SKILL_COLLECT_OIL } });
+    }
+    tntBoom(){
+        cc.director.emit(EventConstant.USE_SKILL, { detail: { type: Skill.SKILL_TNT } });
     }
     useSkill(event:cc.Event,customEventData:string){
         if(Logic.isProcessing){
@@ -106,16 +109,25 @@ export default class NewClass extends cc.Component {
         switch(customEventData){
             case '0':this.changeOil();break;
             case '1':break;
-            case '2':break;
-            case '3':break;
+            case '2':this.collectOil();break;
+            case '3':this.tntBoom();break;
         }
     }
 
     start () {
 
     }
-
+    checkTimeDelay = 0;
+    isCheckTimeDelay(dt: number): boolean {
+        this.checkTimeDelay += dt;
+        if (this.checkTimeDelay > 0.5) {
+            this.checkTimeDelay = 0;
+            return true;
+        }
+        return false;
+    }
     update (dt) {
+        
         this.steplabel.string = `${Logic.step}`;
         this.levellabel.string = `Lv：${Logic.level}`;
         this.coinlabel.string = `：${Logic.coin}`;
@@ -129,9 +141,12 @@ export default class NewClass extends cc.Component {
         this.purplebar.progress = Utils.lerpnum(this.purplebar.progress,Logic.purplepower/Logic.maxpurplepower,dt*5);
         this.greenbar.progress = Utils.lerpnum(this.greenbar.progress,Logic.greenpower/Logic.maxgreenpower,dt*5);
         this.oilbar.progress = Utils.lerpnum(this.oilbar.progress,Logic.oil/Logic.maxoilpower,dt*5);
-        this.skill01.opacity = Logic.isProcessing?128:255;
-        this.skill02.opacity = Logic.isProcessing?128:128;
-        this.skill03.opacity = Logic.isProcessing?128:128;
-        this.skill04.opacity = Logic.isProcessing?128:128;
+        if(this.isCheckTimeDelay(dt)){
+            this.skill01.opacity = Logic.oil>=3&&!Logic.isProcessing?255:128;
+            this.skill02.opacity = Logic.isProcessing?128:128;
+            // this.skill02.opacity = Logic.updateElements(Skill.SKILL_TNT_ARR,false)&&!Logic.isProcessing?255:128;
+            this.skill03.opacity = Logic.updateElements(Skill.SKILL_COLLECT_OIL_ARR,false)&&!Logic.isProcessing?255:128;
+            this.skill04.opacity = Logic.isProcessing?0:0;
+        }
     }
 }

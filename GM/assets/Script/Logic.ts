@@ -55,6 +55,36 @@ export default class Logic extends cc.Component {
         // cc.PhysicsManager.DrawBits.e_jointBit |
         // cc.PhysicsManager.DrawBits.e_shapeBit;
     }
+    static updateElements(arr:number[],needChange:boolean):boolean{
+        let r = Logic.getElementNumber(Logic.redpower,Logic.maxredpower,arr[0]);
+        let b = Logic.getElementNumber(Logic.bluepower,Logic.maxbluepower,arr[1]);
+        let p = Logic.getElementNumber(Logic.purplepower,Logic.maxpurplepower,arr[2]);
+        let g = Logic.getElementNumber(Logic.greenpower,Logic.maxgreenpower,arr[3]);
+        let o = Logic.getElementNumber(Logic.oil,Logic.maxoilpower,arr[4]);
+        let c = Logic.getElementNumber(Logic.coin,-1,arr[5]);
+        if(r.y<1||b.y<1||p.y<1||g.y<1||o.y<1||c.y<1){
+            return false;
+        }
+        if(needChange){
+            Logic.redpower = r.x;
+            Logic.bluepower = b.x;
+            Logic.greenpower = g.x;
+            Logic.purplepower = p.x;
+            Logic.oil = o.x;
+            Logic.coin = c.x;
+        }
+        return true;
+    }
+    /**参数一是数值，参数二代表赋值是否成功 0：失败 1：成功 */
+    static getElementNumber(value:number,max:number,offset:number):cc.Vec2{
+        if(value+offset<0){
+            return cc.v2(value,0);
+        }
+        if(max!=-1&&value+offset>max){
+            value = max;
+        }
+        return cc.v2(value+offset,1);
+    }
     static reset(target:number,step:number){
         Logic.isProcessing = false;
         Logic.level = Logic.profile.data.level;

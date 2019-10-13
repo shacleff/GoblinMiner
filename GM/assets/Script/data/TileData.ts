@@ -1,6 +1,14 @@
 import Random from "../utils/Random";
 
 export default class TileData{
+    static readonly EMPTY = '00';
+    static readonly RED = '01';
+    static readonly BLUE = '02';
+    static readonly PURPLE = '03';
+    static readonly GREEN = '04';
+    static readonly OIL = '05';
+    static readonly COIN = '06';
+    static readonly BLOCK = 'b0';
     tileType = '00';
     resName = 'tile000';
     posIndex:cc.Vec2 = cc.v2(0,0);
@@ -32,7 +40,7 @@ export default class TileData{
         return new TileData(this.tileType,this.posIndex.clone(),this.resName,this.isEmpty,this.isBlock); 
     }
     static getEmptyTileData(x:number,y:number):TileData{
-        return new TileData('00',cc.v2(x,y),'tile000',true,false);
+        return new TileData(TileData.EMPTY,cc.v2(x,y),'tile000',true,false);
     }
     static getPlayerTileData():TileData{
         return new TileData('a0',cc.v2(0,0),'player',false,false);
@@ -42,6 +50,6 @@ export default class TileData{
         return new TileData('0' + ran, cc.v2(x, y), 'tile00' + ran,false,false);
     }
     static getBlockTileData(x:number,y:number):TileData{
-        return new TileData('b0', cc.v2(x, y), 'tile101',false,true);
+        return new TileData(TileData.BLOCK, cc.v2(x, y), 'tile101',false,true);
     }
 }

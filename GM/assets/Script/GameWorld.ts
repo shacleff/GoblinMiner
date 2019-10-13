@@ -4,6 +4,7 @@ import TileData from "./data/TileData";
 import Tile from "./Tile";
 import AudioPlayer from "./utils/AudioPlayer";
 import BoomData from "./data/BoomData";
+import Skill from "./Skill";
 
 // Learn TypeScript:
 //  - [Chinese] http://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -39,6 +40,7 @@ export default class GameWorld extends cc.Component {
     canFill = false;//是否填充
     isRandoming = false;//是否正在随机
     isTopDown = false;//是否正在下沉
+    isSkilling = false;//是否正在使用技能
     boomList: BoomData[] = [];
     speed = 0.1;
 
@@ -50,8 +52,8 @@ export default class GameWorld extends cc.Component {
         cc.director.on(EventConstant.INIT_MAP, (event) => {
             this.initMap();
         })
-        cc.director.on(EventConstant.RED_BOOM_TILE, (event) => {
-            
+        cc.director.on(EventConstant.USE_SKILL, (event) => {
+            this.useSkill(event.detail.type);
         })
         this.actorLayer = this.node.getChildByName('actorlayer');
         this.actorLayer.zIndex = 2000;
@@ -90,7 +92,7 @@ export default class GameWorld extends cc.Component {
     }
     /**检查地图有效性并重组 */
     checkMapValid() {
-        let boomList = this.getBoomList();
+        let boomList = this.getBoomList([],[]);
         for (let i = 0; i < boomList.length; i++) {
             let p = boomList[i];
             if(!this.isPosBlock(cc.v2(p.x,p.y))){
@@ -129,7 +131,7 @@ export default class GameWorld extends cc.Component {
             this.map[pos1.x][pos1.y] = this.map[pos2.x][pos2.y];
             this.map[pos2.x][pos2.y] = temp;
         }
-        let boomList = this.getBoomList();
+        let boomList = this.getBoomList([],[]);
         if (!this.checkMapCanBoom() || boomList.length > 0) {
             cc.log(this.showMap());
             this.randomSortMap(isAnim);
@@ -286,14 +288,32 @@ export default class GameWorld extends cc.Component {
     }
     getTileTypeString(type: string) {
         switch (type) {
-            case '01': return '1';
-            case '02': return '2';
-            case '03': return '3';
-            case '04': return '4';
-            case '05': return '5';
-            case '06': return '6';
-            case 'b0': return 'b';
+            case TileData.RED: return '1';
+            case TileData.BLUE: return '2';
+            case TileData.PURPLE: return '3';
+            case TileData.GREEN: return '4';
+            case TileData.OIL: return '5';
+            case TileData.COIN: return '6';
+            case TileData.BLOCK: return 'b';
             default: return '0';
+        }
+    }
+    useSkill(type:string){
+        this.isSkilling = true;
+        if(type == Skill.SKILL_COLLECT_OIL&&Logic.updateElements(Skill.SKILL_COLLECT_OIL_ARR,false)){
+            let blist:BoomData[] = [];
+            for (let i = 0; i < this.map.length; i++) {
+                for (let j = 0; j < this.map[0].length; j++) {
+                       if(this.map[i][j].data.tileType == TileData.OIL){
+                        blist.push(new BoomData(i,j,false,this.map[i][j].data.tileSpecial,true));
+                       }
+                }
+            }
+            if(blist.length>0&&Logic.updateElements(Skill.SKILL_COLLECT_OIL_ARR,true)){
+                this.boomList = this.getBoomList(blist,[]);
+                this.boomTiles(this.boomList);
+            }
+            this.isSkilling = true;
         }
     }
     tileSwitched(tapPos: cc.Vec2, targetPos: cc.Vec2, isFall: boolean) {
@@ -311,7 +331,7 @@ export default class GameWorld extends cc.Component {
             return;
         }
         this.switchTileData(tapPos, targetPos);
-        let boomList = this.getBoomList([tapPos, targetPos]);
+        let boomList = this.getBoomList([],[tapPos, targetPos]);
         this.boomList = boomList;
         if (boomList.length > 0) {
             Logic.step--;
@@ -405,7 +425,6 @@ export default class GameWorld extends cc.Component {
                         this.map[p.x][p.y].node.opacity = 0;
                         this.map[p.x][p.y].data = TileData.getEmptyTileData(p.x, p.y);
                     }
-                }), cc.callFunc(() => {
                     count++;
                     if (count == boomList.length) {
                         this.canFall = true;
@@ -423,7 +442,7 @@ export default class GameWorld extends cc.Component {
         for (let i = 0; i < fallList.length; i++) {
             let p = fallList[i];
             this.switchTileData(cc.v2(p.x, p.y), cc.v2(p.x, p.y - p.z));
-            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed*p.y/2), cc.moveTo(this.speed*p.z, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()), cc.callFunc(() => {
+            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed*p.y/4), cc.moveTo(this.speed*p.z, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()), cc.callFunc(() => {
                 count++;
                 if (count == fallList.length) {
                     this.canFill = true;
@@ -443,7 +462,7 @@ export default class GameWorld extends cc.Component {
             this.map[p.x][p.y].node.runAction(cc.sequence(cc.delayTime(this.speed*p.y/2),cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE*2))), cc.fadeIn(this.speed), cc.moveTo(this.speed *(1+p.y/2), GameWorld.getPosInMap(cc.v2(p.x, p.y))).easing(cc.easeBackIn()), cc.callFunc(() => {
                 count++;
                 if (count == emptyList.length) {
-                    let boomList = this.getBoomList();
+                    let boomList = this.getBoomList([],[]);
                     this.boomList = boomList;
                     this.boomTiles(boomList);
                     if (boomList.length < 1 && Logic.step < 1) {
@@ -477,7 +496,7 @@ export default class GameWorld extends cc.Component {
         this.map[targetPos.x][targetPos.y] = tile1;
     }
     /**获取可消除方块坐标列表 */
-    getBoomList(dynamicList?: cc.Vec2[]): BoomData[] {
+    getBoomList(extraList:BoomData[],manualList: cc.Vec2[]): BoomData[] {
         let boomList: BoomData[] = new Array();
         let boomList1: BoomData[] = new Array();
         let boomList2: BoomData[] = new Array();
@@ -487,13 +506,13 @@ export default class GameWorld extends cc.Component {
             let startIndex = 0;
             for (let j = 0; j < this.map[0].length; j++) {
                 if (!this.isTypeEqual(cc.v2(i, j), cc.v2(i, startIndex))) {
-                    boomList1 = this.getTempBoomList(boomList1, templist, true, dynamicList);
+                    boomList1 = this.getTempBoomList(boomList1, templist, true, manualList);
                     templist = new Array();
                     startIndex = j;
                 }
                 templist.push(cc.v2(i, j));
                 if (j == this.map[0].length - 1) {
-                    boomList1 = this.getTempBoomList(boomList1, templist, true, dynamicList);
+                    boomList1 = this.getTempBoomList(boomList1, templist, true, manualList);
                 }
             }
         }
@@ -502,17 +521,18 @@ export default class GameWorld extends cc.Component {
             let startIndex = 0;
             for (let i = 0; i < this.map.length; i++) {
                 if (!this.isTypeEqual(cc.v2(i, j), cc.v2(startIndex, j))) {
-                    boomList2 = this.getTempBoomList(boomList2, templist, false, dynamicList);
+                    boomList2 = this.getTempBoomList(boomList2, templist, false, manualList);
                     templist = new Array();
                     startIndex = i;
                 }
                 templist.push(cc.v2(i, j));
                 if (i == this.map.length - 1) {
-                    boomList2 = this.getTempBoomList(boomList2, templist, false, dynamicList);
+                    boomList2 = this.getTempBoomList(boomList2, templist, false, manualList);
                 }
             }
         }
         let list = boomList1.concat(boomList2);
+        list = list.concat(extraList);
         for (let p of list) {
             let bm = boomMap[`x=${p.x}y=${p.y}`];
             if (bm) {
@@ -524,6 +544,7 @@ export default class GameWorld extends cc.Component {
                 boomMap[`x=${p.x}y=${p.y}`] = p;
             }
         }
+        
         //去重
         for (let k in boomMap) {
             let pos = boomMap[k];
@@ -627,13 +648,14 @@ export default class GameWorld extends cc.Component {
                 boomList.push(pos);
             }
         }
+        cc.log(boomList);
         if(hasSpecial){
             boomList = this.getExBoomList(boomList);
         }
         return boomList;
     }
     /**获取相同可爆炸方块 */
-    getTempBoomList(boomList: BoomData[], templist: cc.Vec2[], isVertical: boolean, dynamicList?: cc.Vec2[]): BoomData[] {
+    getTempBoomList(boomList: BoomData[], templist: cc.Vec2[], isVertical: boolean, manualList?: cc.Vec2[]): BoomData[] {
         let type = Tile.SPECIAL_NORMAL;
         let hasCenter = false;
         //四消
@@ -650,8 +672,8 @@ export default class GameWorld extends cc.Component {
                 let isCenter = false;
                 let p = cc.v2(templist[i].x, templist[i].y);
                 //设置手动交换的中心点
-                if (dynamicList) {
-                    for (let temp of dynamicList) {
+                if (manualList) {
+                    for (let temp of manualList) {
                         if (temp.equals(p)) {
                             isCenter = true;
                             break;
@@ -685,17 +707,21 @@ export default class GameWorld extends cc.Component {
         let fallList: cc.Vec3[] = new Array();
         for (let i = 0; i < this.map.length; i++) {
             let count = 0;
+            let countSingle = 0;
             let isSave = false;
             for (let j = 0; j < this.map[0].length; j++) {
                 //由下往上查找是否有空方块，如果有计数+1，继续遍历到空方块继续+1，不是空方块且计数不为0，保存该点，继续寻找下一个
                 if (this.map[i][j].data.isEmpty) {
                     if (isSave) {
                         isSave = false;
-                        count = 0;
+                        countSingle = 0;
                     }
-                    count++;
+                    countSingle++;
                 } else {
-                    if (count > 0) {
+                    if (countSingle > 0) {
+                        if(!isSave){
+                            count+=countSingle;
+                        }
                         isSave = true;
                         fallList.push(cc.v3(i, j, count));
                     }

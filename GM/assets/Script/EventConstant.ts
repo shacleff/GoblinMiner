@@ -13,7 +13,7 @@ export class EventConstant extends cc.Component{
 
     public static readonly INIT_MAP = 'INIT_MAP';
     public static readonly TILE_SWITCH = 'TILE_SWITCH';
-    public static readonly RED_BOOM_TILE = 'RED_BOOM_TILE';
+    public static readonly USE_SKILL = 'USE_SKILL';
     
     public static eventHandler:cc.Node = new cc.Node();
     // LIFE-CYCLE CALLBACKS:
