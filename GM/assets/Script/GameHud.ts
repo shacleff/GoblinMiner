@@ -2,7 +2,9 @@ import Logic from "./Logic";
 import { EventConstant } from "./EventConstant";
 import Utils from "./utils/Utils";
 import AudioPlayer from "./utils/AudioPlayer";
-import Skill from "./Skill";
+import SkillManager from "./manager/SkillManager";
+import SkillIcon from "./SkillIcon";
+import GameWorld from "./GameWorld";
 
 // Learn TypeScript:
 //  - [Chinese] https://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -29,6 +31,10 @@ export default class NewClass extends cc.Component {
     againDialog:cc.Node = null;
     @property(cc.Sprite)
     dialogPlayer:cc.Sprite = null;
+    @property(cc.Prefab)
+    skillPrefab:cc.Prefab = null;
+    @property(GameWorld)
+    gameWorld:GameWorld = null;
 
     redbar:cc.ProgressBar = null;
     bluebar:cc.ProgressBar = null;
@@ -41,10 +47,9 @@ export default class NewClass extends cc.Component {
     greenlabel:cc.Label = null;
     oillabel:cc.Label = null;
     
-    skill01:cc.Node = null;
-    skill02:cc.Node = null;
-    skill03:cc.Node = null;
-    skill04:cc.Node = null;
+    skillNode:cc.Node = null;
+    skillList:SkillIcon[] = [];
+    skillManager:SkillManager = new SkillManager();
     
     // LIFE-CYCLE CALLBACKS:
 
@@ -52,6 +57,7 @@ export default class NewClass extends cc.Component {
         cc.director.on(EventConstant.GAME_OVER, (event) => {
             this.gameOver(event.detail.over);
         })
+       
         this.redbar = this.node.getChildByName('bar').getChildByName('redbar').getComponent(cc.ProgressBar);
         this.bluebar = this.node.getChildByName('bar').getChildByName('bluebar').getComponent(cc.ProgressBar);
         this.purplebar = this.node.getChildByName('bar').getChildByName('purplebar').getComponent(cc.ProgressBar);
@@ -62,10 +68,21 @@ export default class NewClass extends cc.Component {
         this.purplelabel = this.node.getChildByName('bar').getChildByName('purplebar').getChildByName('label').getComponent(cc.Label);
         this.greenlabel = this.node.getChildByName('bar').getChildByName('greenbar').getChildByName('label').getComponent(cc.Label);
         this.oillabel = this.node.getChildByName('bar').getChildByName('oilbar').getChildByName('label').getComponent(cc.Label);
-        this.skill01 = this.node.getChildByName('skill').getChildByName('skill01');
-        this.skill02 = this.node.getChildByName('skill').getChildByName('skill02');
-        this.skill03 = this.node.getChildByName('skill').getChildByName('skill03');
-        this.skill04 = this.node.getChildByName('skill').getChildByName('skill04');
+        this.skillNode = this.node.getChildByName('skill');
+        this.skillNode.removeAllChildren();
+        this.skillManager.gameWorld = this.gameWorld;
+        for(let i = 0;i< 3;i++){
+            let pb = cc.instantiate(this.skillPrefab);
+            let icon = pb.getComponent(SkillIcon);
+            this.skillList.push(icon);
+            this.skillNode.addChild(pb);
+        }
+        this.skillList[0].data.init('','','skill001',0,0,0,0,3,0,0);
+        this.skillList[1].data.init('','','skill002',9,3,3,3,0,0,0);
+        this.skillList[2].data.init('','','skill003',6,6,6,6,0,0,0);
+        this.skillList[0].init(this.skillManager);
+        this.skillList[1].init(this.skillManager);
+        this.skillList[2].init(this.skillManager);
     }
     //button
     playAgain(){
@@ -87,31 +104,6 @@ export default class NewClass extends cc.Component {
         this.againDialog.active = true;
         Logic.isPaused = true;
         
-    }
-    changeOil(){
-        if(Logic.oil>=3){
-            Logic.oil-=3;
-            Logic.step+=1;
-            cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.SKILL_001 } });
-            this.changeOil();
-        }
-    }
-    collectOil(){
-        cc.director.emit(EventConstant.USE_SKILL, { detail: { type: Skill.SKILL_COLLECT_OIL } });
-    }
-    tntBoom(){
-        cc.director.emit(EventConstant.USE_SKILL, { detail: { type: Skill.SKILL_TNT } });
-    }
-    useSkill(event:cc.Event,customEventData:string){
-        if(Logic.isProcessing){
-            return;
-        }
-        switch(customEventData){
-            case '0':this.changeOil();break;
-            case '1':break;
-            case '2':this.collectOil();break;
-            case '3':this.tntBoom();break;
-        }
     }
 
     start () {
@@ -141,12 +133,6 @@ export default class NewClass extends cc.Component {
         this.purplebar.progress = Utils.lerpnum(this.purplebar.progress,Logic.purplepower/Logic.maxpurplepower,dt*5);
         this.greenbar.progress = Utils.lerpnum(this.greenbar.progress,Logic.greenpower/Logic.maxgreenpower,dt*5);
         this.oilbar.progress = Utils.lerpnum(this.oilbar.progress,Logic.oil/Logic.maxoilpower,dt*5);
-        if(this.isCheckTimeDelay(dt)){
-            this.skill01.opacity = Logic.oil>=3&&!Logic.isProcessing?255:128;
-            this.skill02.opacity = Logic.isProcessing?128:128;
-            // this.skill02.opacity = Logic.updateElements(Skill.SKILL_TNT_ARR,false)&&!Logic.isProcessing?255:128;
-            this.skill03.opacity = Logic.updateElements(Skill.SKILL_COLLECT_OIL_ARR,false)&&!Logic.isProcessing?255:128;
-            this.skill04.opacity = Logic.isProcessing?0:0;
-        }
+        
     }
 }

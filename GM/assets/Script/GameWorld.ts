@@ -4,7 +4,7 @@ import TileData from "./data/TileData";
 import Tile from "./Tile";
 import AudioPlayer from "./utils/AudioPlayer";
 import BoomData from "./data/BoomData";
-import Skill from "./Skill";
+import SkillManager from "./manager/SkillManager";
 
 // Learn TypeScript:
 //  - [Chinese] http://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -52,9 +52,7 @@ export default class GameWorld extends cc.Component {
         cc.director.on(EventConstant.INIT_MAP, (event) => {
             this.initMap();
         })
-        cc.director.on(EventConstant.USE_SKILL, (event) => {
-            this.useSkill(event.detail.type);
-        })
+        
         this.actorLayer = this.node.getChildByName('actorlayer');
         this.actorLayer.zIndex = 2000;
         this.initMap();
@@ -298,24 +296,7 @@ export default class GameWorld extends cc.Component {
             default: return '0';
         }
     }
-    useSkill(type:string){
-        this.isSkilling = true;
-        if(type == Skill.SKILL_COLLECT_OIL&&Logic.updateElements(Skill.SKILL_COLLECT_OIL_ARR,false)){
-            let blist:BoomData[] = [];
-            for (let i = 0; i < this.map.length; i++) {
-                for (let j = 0; j < this.map[0].length; j++) {
-                       if(this.map[i][j].data.tileType == TileData.OIL){
-                        blist.push(new BoomData(i,j,false,this.map[i][j].data.tileSpecial,true));
-                       }
-                }
-            }
-            if(blist.length>0&&Logic.updateElements(Skill.SKILL_COLLECT_OIL_ARR,true)){
-                this.boomList = this.getBoomList(blist,[]);
-                this.boomTiles(this.boomList);
-            }
-            this.isSkilling = true;
-        }
-    }
+
     tileSwitched(tapPos: cc.Vec2, targetPos: cc.Vec2, isFall: boolean) {
         if (targetPos.x > this.map.length - 1 || targetPos.x < 0 || targetPos.y > this.map[0].length - 1 || targetPos.y < 0) {
             return;

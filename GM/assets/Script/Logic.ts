@@ -77,13 +77,13 @@ export default class Logic extends cc.Component {
     }
     /**参数一是数值，参数二代表赋值是否成功 0：失败 1：成功 */
     static getElementNumber(value:number,max:number,offset:number):cc.Vec2{
-        if(value+offset<0){
+        if(value-offset<0){
             return cc.v2(value,0);
         }
-        if(max!=-1&&value+offset>max){
+        if(max!=-1&&value-offset>max){
             value = max;
         }
-        return cc.v2(value+offset,1);
+        return cc.v2(value-offset,1);
     }
     static reset(target:number,step:number){
         Logic.isProcessing = false;
