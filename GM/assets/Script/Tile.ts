@@ -47,9 +47,12 @@ export default class Tile extends cc.Component {
         },this);
         this.node.on(cc.Node.EventType.TOUCH_END,(event:cc.Event.EventTouch)=>{
             this.glow.opacity = 0;
+            if(Logic.isUseSkillChoose){
+                cc.director.emit(EventConstant.USE_SKILL,{detail:{tapPos:this.data.posIndex}});
+            }
         },this);
         this.node.on(cc.Node.EventType.TOUCH_CANCEL,(event:cc.Event.EventTouch)=>{
-            if(Logic.isProcessing||Logic.isPaused){
+            if(Logic.isProcessing||Logic.isPaused||Logic.isUseSkillChoose){
                 this.glow.opacity = 0;
                 return;
             }
@@ -63,8 +66,11 @@ export default class Tile extends cc.Component {
             }else{
                 pos.y = end.y>0?pos.y+1:pos.y-1;
             }
-            cc.director.emit(EventConstant.TILE_SWITCH,{detail:{tapPos:this.data.posIndex,targetPos:pos}});
-            
+            if(Logic.isUseSkillSwipe){
+                cc.director.emit(EventConstant.USE_SKILL,{detail:{tapPos:this.data.posIndex,targetPos:pos}});
+            }else{
+                cc.director.emit(EventConstant.TILE_SWITCH,{detail:{tapPos:this.data.posIndex,targetPos:pos}});
+            }
             this.glow.opacity = 0;
         },this);
     }

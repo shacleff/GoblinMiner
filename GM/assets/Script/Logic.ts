@@ -34,6 +34,8 @@ export default class Logic extends cc.Component {
     static maxgreenpower = 20;
     static maxoilpower = 50;
     static profile:ProfileManager = new ProfileManager();
+    static isUseSkillSwipe = false;//是否使用滑动技能
+    static isUseSkillChoose = false;//是否使用选择技能
     // LIFE-CYCLE CALLBACKS:
 
     onLoad() {
@@ -87,6 +89,8 @@ export default class Logic extends cc.Component {
     }
     static reset(target:number,step:number){
         Logic.isProcessing = false;
+        Logic.isUseSkillSwipe = false;
+        Logic.isUseSkillChoose = false;
         Logic.level = Logic.profile.data.level;
         Logic.coin = Logic.profile.data.coins;
         Logic.oil = 0;

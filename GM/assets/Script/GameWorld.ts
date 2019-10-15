@@ -423,7 +423,7 @@ export default class GameWorld extends cc.Component {
         for (let i = 0; i < fallList.length; i++) {
             let p = fallList[i];
             this.switchTileData(cc.v2(p.x, p.y), cc.v2(p.x, p.y - p.z));
-            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed*p.y/4), cc.moveTo(this.speed*p.z, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()), cc.callFunc(() => {
+            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed*p.y/8), cc.moveTo(this.speed*p.z, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()), cc.callFunc(() => {
                 count++;
                 if (count == fallList.length) {
                     this.canFill = true;
@@ -446,12 +446,12 @@ export default class GameWorld extends cc.Component {
                     let boomList = this.getBoomList([],[]);
                     this.boomList = boomList;
                     this.boomTiles(boomList);
+                    Logic.profile.data.coins += Logic.coin;
+                    if(Logic.level - Logic.profile.data.level>10){
+                        Logic.profile.data.level = Logic.level; 
+                    }
+                    Logic.profile.saveData();
                     if (boomList.length < 1 && Logic.step < 1) {
-                        Logic.profile.data.coins += Logic.coin;
-                        if(Logic.level - Logic.profile.data.level>10){
-                            Logic.profile.data.level = Logic.level; 
-                        }
-                        Logic.profile.saveData();
                         cc.director.emit(EventConstant.GAME_OVER, { detail: { over: true } });
                     } else if (boomList.length < 1 && !this.checkMapCanBoom()) {
                         this.scheduleOnce(() => {

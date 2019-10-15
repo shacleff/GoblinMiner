@@ -78,7 +78,7 @@ export default class NewClass extends cc.Component {
             this.skillNode.addChild(pb);
         }
         this.skillList[0].data.init('','','skill001',0,0,0,0,3,0,0);
-        this.skillList[1].data.init('','','skill002',9,3,3,3,0,0,0);
+        this.skillList[1].data.init('','','skill002',6,6,0,0,1,0,1);
         this.skillList[2].data.init('','','skill003',6,6,6,6,0,0,0);
         this.skillList[0].init(this.skillManager);
         this.skillList[1].init(this.skillManager);

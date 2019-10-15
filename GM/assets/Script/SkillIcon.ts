@@ -2,6 +2,7 @@ import SkillData from "./data/SkillData";
 import Logic from "./Logic";
 import GameWorld from "./GameWorld";
 import SkillManager from "./manager/SkillManager";
+import { EventConstant } from "./EventConstant";
 
 // Learn TypeScript:
 //  - [Chinese] https://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -29,6 +30,11 @@ export default class SkillIcon extends cc.Component {
         this.effectChoose = this.node.getChildByName('effectChoose');
         this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
         this.effectChoose.active = false;
+        cc.director.on(EventConstant.USE_SKILL, (event) => {
+            if(this.isActive){
+                this.doOperator(event.detail.tapPos, event.detail.targetPos);
+            }
+        })
         this.node.on(cc.Node.EventType.TOUCH_START, (event: cc.Event.EventTouch) => {
             if(this.node.opacity != 255){
                 return;
@@ -45,18 +51,12 @@ export default class SkillIcon extends cc.Component {
                     this.doOperator();
                     break;
                 case SkillIcon.OPERATOR_CHOOSE:
-                    if (this.isActive) {
-                        this.doOperator();
-                    } else {
-                        this.isActive = true;
-                    }
+                    this.isActive = !this.isActive;
+                    Logic.isUseSkillChoose = this.isActive;
                     break;
                 case SkillIcon.OPERATOR_SWIPE:
-                    if (this.isActive) {
-                        this.doOperator();
-                    } else {
-                        this.isActive = true;
-                    }
+                this.isActive = !this.isActive;
+                Logic.isUseSkillSwipe = this.isActive;
                     break;
             }
         }, this);
@@ -71,12 +71,14 @@ export default class SkillIcon extends cc.Component {
     changeRes() {
         this.sprite.spriteFrame = Logic.spriteFrames[this.data.resName];
     }
-    doOperator() {
+    doOperator(tapPos?: cc.Vec2, targetPos?: cc.Vec2) {
         this.isActive = false;
+        Logic.isUseSkillChoose = false;
+        Logic.isUseSkillSwipe = false;
         if(!this.skillManager){
             return;
         }
-        this.skillManager.doOperator(this.data);
+        this.skillManager.doOperator(this.data,tapPos,targetPos);
     }
     start() {
 
