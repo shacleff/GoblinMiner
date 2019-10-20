@@ -14,6 +14,8 @@ export class EventConstant extends cc.Component{
     public static readonly INIT_MAP = 'INIT_MAP';
     public static readonly TILE_SWITCH = 'TILE_SWITCH';
     public static readonly USE_SKILL = 'USE_SKILL';
+    public static readonly BOSS_HURT = 'BOSS_HURT';
+    public static readonly HUD_UPDATE_HEATH_BAR = 'HUD_UPDATE_HEATH_BAR';
     
     public static eventHandler:cc.Node = new cc.Node();
     // LIFE-CYCLE CALLBACKS:

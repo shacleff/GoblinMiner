@@ -102,7 +102,12 @@ export default class Logic extends cc.Component {
         Logic.maxstep = step;
         Logic.target = target;
     }
-
+    static needBoss():boolean{
+        if(Logic.level%12==0){
+            return true;
+        }
+        return false;
+    }
     start() {
 
     }

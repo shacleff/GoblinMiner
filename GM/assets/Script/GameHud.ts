@@ -35,7 +35,8 @@ export default class NewClass extends cc.Component {
     skillPrefab:cc.Prefab = null;
     @property(GameWorld)
     gameWorld:GameWorld = null;
-
+    healthBar:cc.ProgressBar = null;
+    healthLabel:cc.Label = null;    
     redbar:cc.ProgressBar = null;
     bluebar:cc.ProgressBar = null;
     purplebar:cc.ProgressBar = null;
@@ -50,6 +51,8 @@ export default class NewClass extends cc.Component {
     skillNode:cc.Node = null;
     skillList:SkillIcon[] = [];
     skillManager:SkillManager = new SkillManager();
+
+    bossHealth:cc.Vec2 = cc.v2(0,0);
     
     // LIFE-CYCLE CALLBACKS:
 
@@ -57,7 +60,11 @@ export default class NewClass extends cc.Component {
         cc.director.on(EventConstant.GAME_OVER, (event) => {
             this.gameOver(event.detail.over);
         })
-       
+        cc.director.on(EventConstant.HUD_UPDATE_HEATH_BAR, (event) => {
+            this.bossHealth = cc.v2(event.detail.health.x,event.detail.health.y);
+        })
+        this.healthBar = this.node.getChildByName('healthBar').getComponent(cc.ProgressBar);
+        this.healthLabel = this.node.getChildByName('healthBar').getChildByName('label').getComponent(cc.Label);
         this.redbar = this.node.getChildByName('bar').getChildByName('redbar').getComponent(cc.ProgressBar);
         this.bluebar = this.node.getChildByName('bar').getChildByName('bluebar').getComponent(cc.ProgressBar);
         this.purplebar = this.node.getChildByName('bar').getChildByName('purplebar').getComponent(cc.ProgressBar);
@@ -133,6 +140,9 @@ export default class NewClass extends cc.Component {
         this.purplebar.progress = Utils.lerpnum(this.purplebar.progress,Logic.purplepower/Logic.maxpurplepower,dt*5);
         this.greenbar.progress = Utils.lerpnum(this.greenbar.progress,Logic.greenpower/Logic.maxgreenpower,dt*5);
         this.oilbar.progress = Utils.lerpnum(this.oilbar.progress,Logic.oil/Logic.maxoilpower,dt*5);
+        this.healthBar.progress = Utils.lerpnum(this.healthBar.progress,this.bossHealth.x/this.bossHealth.y,dt*5);
+        this.healthLabel.string = `${this.bossHealth.x}/${this.bossHealth.y}`;
+        this.healthBar.node.opacity = this.bossHealth.x<=0?0:255;
         
     }
 }

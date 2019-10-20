@@ -5,6 +5,9 @@ import Tile from "./Tile";
 import AudioPlayer from "./utils/AudioPlayer";
 import BoomData from "./data/BoomData";
 import SkillManager from "./manager/SkillManager";
+import Boss from "./Boss";
+import BossData from "./data/BossData";
+import Random from "./utils/Random";
 
 // Learn TypeScript:
 //  - [Chinese] http://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -24,18 +27,21 @@ export default class GameWorld extends cc.Component {
     playerPrefab: cc.Prefab = null;
     @property(cc.Prefab)
     tilePrefab: cc.Prefab = null;
+    @property(cc.Prefab)
+    bossPrefab: cc.Prefab = null;
     private timeDelay = 0;
     private checkTimeDelay = 0;
     actorLayer: cc.Node;
+    boss:Boss;
     map: Tile[][] = [];
-    blockMap:Tile[][] = [];
+    obstacleMap: Tile[][] = [];
     static readonly BOTTOM_LINE_INDEX = 3;
     static readonly TILE_SIZE: number = 80;
     static WIDTH_SIZE: number = 9;
     static HEIGHT_SIZE: number = 9;
     static MAPX: number = -GameWorld.WIDTH_SIZE * GameWorld.TILE_SIZE / 2;
     static MAPY: number = 128;
-    static readonly BLOCK_HEIGHT = 3;
+    static readonly OBSTACLE_HEIGHT = 3;
     canFall = false;//是否下落
     canFill = false;//是否填充
     isRandoming = false;//是否正在随机
@@ -52,7 +58,7 @@ export default class GameWorld extends cc.Component {
         cc.director.on(EventConstant.INIT_MAP, (event) => {
             this.initMap();
         })
-        
+
         this.actorLayer = this.node.getChildByName('actorlayer');
         this.actorLayer.zIndex = 2000;
         this.initMap();
@@ -67,33 +73,58 @@ export default class GameWorld extends cc.Component {
             for (let j = 0; j < GameWorld.HEIGHT_SIZE; j++) {
                 let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
                 tile.initTile(TileData.getRandomTileData(i, j));
-                if (j < GameWorld.BLOCK_HEIGHT) {
-                    tile.initTile(TileData.getBlockTileData(i, j));
+                if (j < GameWorld.OBSTACLE_HEIGHT) {
+                    tile.initTile(TileData.getObstacleTileData(i, j, Random.getRandomNum(0,1)));
+                    if(i>2&&i<6&&Logic.needBoss()){
+                        tile.initTile(TileData.getBossTileData(i, j, 1));
+                    }
                 }
                 this.actorLayer.addChild(tile.node);
                 this.map[i][j] = tile;
             }
         }
-        this.blockMap = new Array();
+        this.obstacleMap = new Array();
         for (let i = 0; i < GameWorld.WIDTH_SIZE; i++) {
-            this.blockMap[i] = new Array();
-            for (let j = 0; j < GameWorld.BLOCK_HEIGHT; j++) {
+            this.obstacleMap[i] = new Array();
+            for (let j = 0; j < GameWorld.OBSTACLE_HEIGHT; j++) {
                 let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
-                tile.initTile(TileData.getBlockTileData(i, j-GameWorld.BLOCK_HEIGHT));
+                tile.initTile(TileData.getObstacleTileData(i, j - GameWorld.OBSTACLE_HEIGHT, Random.getRandomNum(0,1)));
                 tile.node.opacity = 0;
                 this.actorLayer.addChild(tile.node);
-                this.blockMap[i][j] = tile;
+                this.obstacleMap[i][j] = tile;
             }
         }
+        this.initBoss();
+        this.updateBoss();
         this.checkMapValid();
         cc.log(this.showMap());
     }
+    initBoss(){
+        let bp = cc.instantiate(this.bossPrefab);
+        this.actorLayer.addChild(bp);
+        this.boss = bp.getComponent(Boss);
+        this.boss.node.active = false;
+        this.boss.data = new BossData(0,'boss000',cc.v2(4,1),3,3,cc.v2(0,0));
+        this.boss.init();
+    }
+   updateBoss(){
+       if(!Logic.needBoss()){
+           return;
+       }
+       this.boss.node.active = true;
+       let health = Math.floor(Logic.level/12)*5;
+       if(health<1){
+           health = 1;
+       }
+       this.boss.data = new BossData(0,'boss000',cc.v2(4,1),3,3,cc.v2(health,health));
+       this.boss.init();
+   }
     /**检查地图有效性并重组 */
     checkMapValid() {
-        let boomList = this.getBoomList([],[]);
+        let boomList = this.getBoomList([], []);
         for (let i = 0; i < boomList.length; i++) {
             let p = boomList[i];
-            if(!this.isPosBlock(cc.v2(p.x,p.y))){
+            if (!this.isPosObstacle(cc.v2(p.x, p.y))) {
                 this.map[p.x][p.y].initTile(TileData.getRandomTileData(p.x, p.y))
             }
         }
@@ -111,7 +142,7 @@ export default class GameWorld extends cc.Component {
         let indexs2: cc.Vec2[] = new Array();
         for (let i = 0; i < this.map.length; i++) {
             for (let j = 0; j < this.map[0].length; j++) {
-                if (!this.isBlockOrEmptyType(this.map[i][j].data.tileType)) {
+                if (!this.isObstacleOrEmptyType(this.map[i][j].data.tileType)) {
                     indexs1.push(cc.v2(i, j));
                     indexs2.push(cc.v2(i, j));
                 }
@@ -129,7 +160,7 @@ export default class GameWorld extends cc.Component {
             this.map[pos1.x][pos1.y] = this.map[pos2.x][pos2.y];
             this.map[pos2.x][pos2.y] = temp;
         }
-        let boomList = this.getBoomList([],[]);
+        let boomList = this.getBoomList([], []);
         if (!this.checkMapCanBoom() || boomList.length > 0) {
             cc.log(this.showMap());
             this.randomSortMap(isAnim);
@@ -147,7 +178,7 @@ export default class GameWorld extends cc.Component {
         }
     }
     /**地图下降 */
-    downMap(){
+    downMap() {
         Logic.level += 3;
         Logic.step += 3;
         let speed = 0.4;
@@ -155,51 +186,54 @@ export default class GameWorld extends cc.Component {
         this.isTopDown = true;
         for (let i = 0; i < this.map.length; i++) {
             for (let j = 0; j < this.map[0].length; j++) {
-                    this.map[i][j].data.posIndex = cc.v2(i,j+GameWorld.BLOCK_HEIGHT);
-                    if(j>=GameWorld.HEIGHT_SIZE-GameWorld.BLOCK_HEIGHT){
-                        this.map[i][j].node.runAction(cc.fadeOut(speed/2));
-                    }else{
-                        this.map[i][j].node.runAction(cc.moveTo(speed,GameWorld.getPosInMap(this.map[i][j].data.posIndex)));
-                    }
-            }
-        }
-        for (let i = 0; i < this.blockMap.length; i++) {
-            for (let j = 0; j < this.blockMap[0].length; j++) {
-                    this.blockMap[i][j].data.posIndex = cc.v2(i,j);
-                    this.blockMap[i][j].node.opacity = 255;
-                    this.blockMap[i][j].node.runAction(cc.moveTo(speed,GameWorld.getPosInMap(this.blockMap[i][j].data.posIndex)));
-            }
-        }
-        this.scheduleOnce(()=>{
-            for (let i = 0; i < this.map.length; i++) {
-                for (let j = this.map[0].length-1; j-GameWorld.BLOCK_HEIGHT > -1; j--) {
-                        let temp = this.map[i][j];
-                        this.map[i][j] = this.map[i][j-GameWorld.BLOCK_HEIGHT];
-                        this.map[i][j-GameWorld.BLOCK_HEIGHT] = temp;
+                this.map[i][j].data.posIndex = cc.v2(i, j + GameWorld.OBSTACLE_HEIGHT);
+                if (j >= GameWorld.HEIGHT_SIZE - GameWorld.OBSTACLE_HEIGHT) {
+                    this.map[i][j].node.runAction(cc.fadeOut(speed / 2));
+                } else {
+                    this.map[i][j].node.runAction(cc.moveTo(speed, GameWorld.getPosInMap(this.map[i][j].data.posIndex)));
                 }
             }
-            for (let i = 0; i < this.blockMap.length; i++) {
-                for (let j = 0; j < this.blockMap[0].length; j++) {
-                        let temp = this.blockMap[i][j];
-                        this.blockMap[i][j] = this.map[i][j];
-                        this.map[i][j] = temp;
-                        this.blockMap[i][j].initTile(TileData.getBlockTileData(i, j-GameWorld.BLOCK_HEIGHT));
-                        this.blockMap[i][j].node.opacity = 0;
+        }
+        for (let i = 0; i < this.obstacleMap.length; i++) {
+            for (let j = 0; j < this.obstacleMap[0].length; j++) {
+                this.obstacleMap[i][j].data.posIndex = cc.v2(i, j);
+                this.obstacleMap[i][j].node.opacity = 255;
+                this.obstacleMap[i][j].node.runAction(cc.moveTo(speed, GameWorld.getPosInMap(this.obstacleMap[i][j].data.posIndex)));
+            }
+        }
+        this.scheduleOnce(() => {
+            for (let i = 0; i < this.map.length; i++) {
+                for (let j = this.map[0].length - 1; j - GameWorld.OBSTACLE_HEIGHT > -1; j--) {
+                    let temp = this.map[i][j];
+                    this.map[i][j] = this.map[i][j - GameWorld.OBSTACLE_HEIGHT];
+                    this.map[i][j - GameWorld.OBSTACLE_HEIGHT] = temp;
+                }
+            }
+            for (let i = 0; i < this.obstacleMap.length; i++) {
+                for (let j = 0; j < this.obstacleMap[0].length; j++) {
+                    let temp = this.obstacleMap[i][j];
+                    this.obstacleMap[i][j] = this.map[i][j];
+                    this.map[i][j] = temp;
+                    this.obstacleMap[i][j].initTile(TileData.getObstacleTileData(i, j - GameWorld.OBSTACLE_HEIGHT, Random.getRandomNum(0,1)));
+                    if(i>2&&i<6&&Logic.needBoss()){
+                        this.obstacleMap[i][j].initTile(TileData.getBossTileData(i, j, 1));
+                    }
+                    this.obstacleMap[i][j].node.opacity = 0;
                 }
             }
             this.isTopDown = false;
-        },speed*1.5)
+        }, speed * 1.5)
     }
     /**检查地图是否可以消除 */
     checkMapCanBoom(): boolean {
         let mapdata = this.getMapDataClone();
         for (let i = 0; i < mapdata.length; i++) {
             for (let j = 0; j < mapdata[0].length; j++) {
-                if (mapdata[i][j].isBlock) {
+                if (mapdata[i][j].isObstacle) {
                     continue;
                 }
                 let temp = mapdata[i][j];
-                if (j < mapdata[0].length - 1 && !mapdata[i][j + 1].isBlock) {
+                if (j < mapdata[0].length - 1 && !mapdata[i][j + 1].isObstacle) {
                     //竖排元素交换
                     mapdata[i][j] = mapdata[i][j + 1];
                     mapdata[i][j + 1] = temp;
@@ -212,7 +246,7 @@ export default class GameWorld extends cc.Component {
                     mapdata[i][j] = mapdata[i][j + 1];
                     mapdata[i][j + 1] = temp;
                 }
-                if (i < mapdata.length - 1 && !mapdata[i + 1][j].isBlock) {
+                if (i < mapdata.length - 1 && !mapdata[i + 1][j].isObstacle) {
                     //横排元素交换
                     temp = mapdata[i][j];
                     mapdata[i][j] = mapdata[i + 1][j];
@@ -252,10 +286,10 @@ export default class GameWorld extends cc.Component {
         return false;
     }
     /**检查是否3-9层是否还有障碍 */
-    checkMapHasTopBlock():boolean{
+    checkMapHasTopObstacle(): boolean {
         for (let i = 0; i < this.map.length; i++) {
             for (let j = 2; j < this.map[0].length; j++) {
-                if(this.isTypeBlock(this.map[i][j].data.tileType)){
+                if (this.isTypeObstacle(this.map[i][j].data.tileType)||this.map[i][j].data.isBoss) {
                     return true;
                 }
             }
@@ -292,7 +326,8 @@ export default class GameWorld extends cc.Component {
             case TileData.GREEN: return '4';
             case TileData.OIL: return '5';
             case TileData.COIN: return '6';
-            case TileData.BLOCK: return 'b';
+            case TileData.OBSTACLE: return '#';
+            case TileData.BOSS: return 'b';
             default: return '0';
         }
     }
@@ -301,7 +336,7 @@ export default class GameWorld extends cc.Component {
         if (targetPos.x > this.map.length - 1 || targetPos.x < 0 || targetPos.y > this.map[0].length - 1 || targetPos.y < 0) {
             return;
         }
-        if (this.map[targetPos.x][targetPos.y].data.isBlock) {
+        if (this.map[targetPos.x][targetPos.y].data.isObstacle) {
             return;
         }
         if (this.canFall || this.canFill) {
@@ -312,7 +347,7 @@ export default class GameWorld extends cc.Component {
             return;
         }
         this.switchTileData(tapPos, targetPos);
-        let boomList = this.getBoomList([],[tapPos, targetPos]);
+        let boomList = this.getBoomList([], [tapPos, targetPos]);
         this.boomList = boomList;
         if (boomList.length > 0) {
             Logic.step--;
@@ -348,45 +383,45 @@ export default class GameWorld extends cc.Component {
                 case Tile.SPECIAL_CROSS: more = 6; break;
                 case Tile.SPECIAL_FIVE: more = 10; break;
             }
-            if(this.map[p.x][p.y].data.tileType == '05'){
-                Logic.oil +=more;
-                if(Logic.oil>Logic.maxoilpower){
-                    Logic.oil=Logic.maxoilpower;
+            if (this.map[p.x][p.y].data.tileType == TileData.OIL) {
+                Logic.oil += more;
+                if (Logic.oil > Logic.maxoilpower) {
+                    Logic.oil = Logic.maxoilpower;
                 }
-            }else if(this.map[p.x][p.y].data.tileType == '06'){
-                Logic.coin +=more;
-            }else if(this.isTypeBlock(this.map[p.x][p.y].data.tileType)){
-            }else if(this.map[p.x][p.y].data.tileType == '01'){
-                Logic.redpower +=more;
-                if(Logic.redpower>Logic.maxredpower){
+            } else if (this.map[p.x][p.y].data.tileType == TileData.COIN) {
+                Logic.coin += more;
+            } else if (this.isTypeObstacle(this.map[p.x][p.y].data.tileType)) {
+            } else if (this.map[p.x][p.y].data.tileType == TileData.RED) {
+                Logic.redpower += more;
+                if (Logic.redpower > Logic.maxredpower) {
                     Logic.redpower = Logic.maxredpower;
                 }
-            }else if(this.map[p.x][p.y].data.tileType == '02'){
-                Logic.bluepower +=more;
-                if(Logic.bluepower>Logic.maxbluepower){
+            } else if (this.map[p.x][p.y].data.tileType == TileData.BLUE) {
+                Logic.bluepower += more;
+                if (Logic.bluepower > Logic.maxbluepower) {
                     Logic.bluepower = Logic.maxbluepower;
                 }
-            }else if(this.map[p.x][p.y].data.tileType == '03'){
-                Logic.purplepower +=more;
-                if(Logic.purplepower>Logic.maxpurplepower){
+            } else if (this.map[p.x][p.y].data.tileType == TileData.PURPLE) {
+                Logic.purplepower += more;
+                if (Logic.purplepower > Logic.maxpurplepower) {
                     Logic.purplepower = Logic.maxpurplepower;
                 }
-            }else if(this.map[p.x][p.y].data.tileType == '04'){
-                Logic.greenpower +=more;
-                if(Logic.greenpower>Logic.maxgreenpower){
+            } else if (this.map[p.x][p.y].data.tileType == TileData.GREEN) {
+                Logic.greenpower += more;
+                if (Logic.greenpower > Logic.maxgreenpower) {
                     Logic.greenpower = Logic.maxgreenpower;
                 }
             }
             this.map[p.x][p.y].node.runAction(cc.sequence(
-                cc.callFunc(()=>{
-                    if(p.isExtraBoom&&!this.isPosBlock(cc.v2(p.x,p.y))){
+                cc.callFunc(() => {
+                    if (p.isExtraBoom && !this.isPosObstacle(cc.v2(p.x, p.y))) {
                         this.map[p.x][p.y].showBoomEffect();
                     }
-                    if(this.isPosBlock(cc.v2(p.x,p.y))){
-                        this.map[p.x][p.y].showBoomBlockEffect();
+                    if (this.isPosObstacle(cc.v2(p.x, p.y))) {
+                        this.map[p.x][p.y].showBoomObstcleEffect();
                     }
                 }),
-                cc.delayTime(p.isExtraBoom?this.speed*5:0),
+                cc.delayTime(p.isExtraBoom ? this.speed * 5 : 0),
                 cc.moveBy(speed, 0, offset)
                 , cc.moveBy(speed, 0, -offset)
                 , cc.moveBy(speed, 0, offset)
@@ -402,6 +437,19 @@ export default class GameWorld extends cc.Component {
                         this.map[p.x][p.y].node.opacity = 255;
                         this.map[p.x][p.y].updateTile();
                         cc.log(p);
+                    } else if (this.map[p.x][p.y].data.isBoss) {
+                        this.boss.takeDamge(1);
+                        if(this.boss.isDied){
+                            this.boss.isDied = false;
+                            this.boss.node.active = false;
+                            this.clearBossTile();
+                        }
+                        this.map[p.x][p.y].node.opacity = 0;
+                        this.map[p.x][p.y].updateTile();
+                    } else if (this.isPosObstacle(cc.v2(p.x, p.y)) && this.map[p.x][p.y].data.obstacleLevel > 0) {
+                        this.map[p.x][p.y].node.opacity = 255;
+                        this.map[p.x][p.y].data.obstacleLevel--;
+                        this.map[p.x][p.y].updateTile();
                     } else {
                         this.map[p.x][p.y].node.opacity = 0;
                         this.map[p.x][p.y].data = TileData.getEmptyTileData(p.x, p.y);
@@ -411,6 +459,16 @@ export default class GameWorld extends cc.Component {
                         this.canFall = true;
                     }
                 })));
+        }
+    }
+    clearBossTile(){
+        for (let i = 0; i < this.map.length; i++) {
+            for (let j = 0; j < this.map[0].length; j++) {
+                if (this.map[i][j].data.isBoss) {
+                    this.map[i][j].initTile(TileData.getEmptyTileData(i,j));
+                    this.map[i][j].updateTile();
+                }
+            }
         }
     }
     fallTiles() {
@@ -423,7 +481,7 @@ export default class GameWorld extends cc.Component {
         for (let i = 0; i < fallList.length; i++) {
             let p = fallList[i];
             this.switchTileData(cc.v2(p.x, p.y), cc.v2(p.x, p.y - p.z));
-            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed*p.y/8), cc.moveTo(this.speed*p.z, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()), cc.callFunc(() => {
+            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed * p.y / 8), cc.moveTo(this.speed * p.z, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()), cc.callFunc(() => {
                 count++;
                 if (count == fallList.length) {
                     this.canFill = true;
@@ -440,15 +498,15 @@ export default class GameWorld extends cc.Component {
         let count = 0;
         for (let i = 0; i < emptyList.length; i++) {
             let p = emptyList[i];
-            this.map[p.x][p.y].node.runAction(cc.sequence(cc.delayTime(this.speed*p.y/2),cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE*2))), cc.fadeIn(this.speed), cc.moveTo(this.speed *(1+p.y/2), GameWorld.getPosInMap(cc.v2(p.x, p.y))).easing(cc.easeBackIn()), cc.callFunc(() => {
+            this.map[p.x][p.y].node.runAction(cc.sequence(cc.delayTime(this.speed * p.y / 2), cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE * 2))), cc.fadeIn(this.speed), cc.moveTo(this.speed * (1 + p.y / 2), GameWorld.getPosInMap(cc.v2(p.x, p.y))).easing(cc.easeBackIn()), cc.callFunc(() => {
                 count++;
                 if (count == emptyList.length) {
-                    let boomList = this.getBoomList([],[]);
+                    let boomList = this.getBoomList([], []);
                     this.boomList = boomList;
                     this.boomTiles(boomList);
                     Logic.profile.data.coins += Logic.coin;
-                    if(Logic.level - Logic.profile.data.level>10){
-                        Logic.profile.data.level = Logic.level; 
+                    if (Logic.level - Logic.profile.data.level > 10) {
+                        Logic.profile.data.level = Logic.level;
                     }
                     Logic.profile.saveData();
                     if (boomList.length < 1 && Logic.step < 1) {
@@ -457,7 +515,7 @@ export default class GameWorld extends cc.Component {
                         this.scheduleOnce(() => {
                             this.randomSortMap(true);
                         }, 1)
-                    } else if(boomList.length < 1 && !this.checkMapHasTopBlock()){
+                    } else if (boomList.length < 1 && !this.checkMapHasTopObstacle()) {
                         this.downMap();
                     }
                 }
@@ -477,7 +535,7 @@ export default class GameWorld extends cc.Component {
         this.map[targetPos.x][targetPos.y] = tile1;
     }
     /**获取可消除方块坐标列表 */
-    getBoomList(extraList:BoomData[],manualList: cc.Vec2[]): BoomData[] {
+    getBoomList(extraList: BoomData[], manualList: cc.Vec2[]): BoomData[] {
         let boomList: BoomData[] = new Array();
         let boomList1: BoomData[] = new Array();
         let boomList2: BoomData[] = new Array();
@@ -525,11 +583,11 @@ export default class GameWorld extends cc.Component {
                 boomMap[`x=${p.x}y=${p.y}`] = p;
             }
         }
-        
+
         //去重
         for (let k in boomMap) {
             let pos = boomMap[k];
-            if (!this.map[pos.x][pos.y].data.isBlock) {
+            if (!this.map[pos.x][pos.y].data.isObstacle) {
                 boomList.push(pos);
             }
         }
@@ -542,17 +600,17 @@ export default class GameWorld extends cc.Component {
             let pos2 = cc.v2(boomList[i].x - 1, boomList[i].y);
             let pos3 = cc.v2(boomList[i].x, boomList[i].y + 1);
             let pos4 = cc.v2(boomList[i].x, boomList[i].y - 1);
-            if (this.isPosBlock(pos1)&&!this.isPosBlock(pos0)) {
-                exboomlist.push(new BoomData(pos1.x, pos1.y, false, 0,boomList[i].isExtraBoom));
+            if (this.isPosObstacle(pos1) && !this.isPosObstacle(pos0)) {
+                exboomlist.push(new BoomData(pos1.x, pos1.y, false, 0, boomList[i].isExtraBoom));
             }
-            if (this.isPosBlock(pos2)&&!this.isPosBlock(pos0)) {
-                exboomlist.push(new BoomData(pos2.x, pos2.y, false, 0,boomList[i].isExtraBoom));
+            if (this.isPosObstacle(pos2) && !this.isPosObstacle(pos0)) {
+                exboomlist.push(new BoomData(pos2.x, pos2.y, false, 0, boomList[i].isExtraBoom));
             }
-            if (this.isPosBlock(pos3)&&!this.isPosBlock(pos0)) {
-                exboomlist.push(new BoomData(pos3.x, pos3.y, false, 0,boomList[i].isExtraBoom));
+            if (this.isPosObstacle(pos3) && !this.isPosObstacle(pos0)) {
+                exboomlist.push(new BoomData(pos3.x, pos3.y, false, 0, boomList[i].isExtraBoom));
             }
-            if (this.isPosBlock(pos4)&&!this.isPosBlock(pos0)) {
-                exboomlist.push(new BoomData(pos3.x, pos4.y, false, 0,boomList[i].isExtraBoom));
+            if (this.isPosObstacle(pos4) && !this.isPosObstacle(pos0)) {
+                exboomlist.push(new BoomData(pos3.x, pos4.y, false, 0, boomList[i].isExtraBoom));
             }
         }
         let exboomMap: { [key: string]: BoomData } = {};
@@ -566,71 +624,71 @@ export default class GameWorld extends cc.Component {
         }
         return boomList;
     }
-    getExBoomList(boomList: BoomData[]):BoomData[]{
+    getExBoomList(boomList: BoomData[]): BoomData[] {
         let boomMap: { [key: string]: BoomData } = {};
         for (let p of boomList) {
             boomMap[`x=${p.x}y=${p.y}`] = p;
         }
         let hasSpecial = false;
-        for(let k in boomMap){
+        for (let k in boomMap) {
             let p = boomMap[k];
-            if(this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_VERTICAL){
-                for(let i = 0;i < this.map.length;i++){
-                    if(!boomMap[`x=${i}y=${p.y}`]&&!this.isPosBlock(cc.v2(i,p.y))){
+            if (this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_VERTICAL) {
+                for (let i = 0; i < this.map.length; i++) {
+                    if (!boomMap[`x=${i}y=${p.y}`] && !this.isPosObstacle(cc.v2(i, p.y))) {
                         hasSpecial = true;
-                        boomMap[`x=${i}y=${p.y}`]= new BoomData(i, p.y, false, this.map[i][p.y].data.tileSpecial,true);
-                    }else if(boomMap[`x=${i}y=${p.y}`]){
+                        boomMap[`x=${i}y=${p.y}`] = new BoomData(i, p.y, false, this.map[i][p.y].data.tileSpecial, true);
+                    } else if (boomMap[`x=${i}y=${p.y}`]) {
                         boomMap[`x=${i}y=${p.y}`].isExtraBoom = true;
                     }
                 }
             }
-            if(this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_HORIZONTAL){
-                for(let j = 0;j < this.map[0].length;j++){
-                    if(!boomMap[`x=${p.x}y=${j}`]&&!this.isPosBlock(cc.v2(p.x, j))){
+            if (this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_HORIZONTAL) {
+                for (let j = 0; j < this.map[0].length; j++) {
+                    if (!boomMap[`x=${p.x}y=${j}`] && !this.isPosObstacle(cc.v2(p.x, j))) {
                         hasSpecial = true;
-                        boomMap[`x=${p.x}y=${j}`] = new BoomData(p.x, j, false, this.map[p.x][j].data.tileSpecial,true);
-                    }else if(boomMap[`x=${p.x}y=${j}`]){
+                        boomMap[`x=${p.x}y=${j}`] = new BoomData(p.x, j, false, this.map[p.x][j].data.tileSpecial, true);
+                    } else if (boomMap[`x=${p.x}y=${j}`]) {
                         boomMap[`x=${p.x}y=${j}`].isExtraBoom = true;
                     }
                 }
             }
-            if(this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_CROSS){
-                let indexs = [cc.v2(p.x-2,p.y),cc.v2(p.x-1,p.y),cc.v2(p.x+1,p.y),cc.v2(p.x+2,p.y)
-                    ,cc.v2(p.x,p.y-2),cc.v2(p.x,p.y-1),cc.v2(p.x,p.y+1),cc.v2(p.x,p.y+2)
-                    ,cc.v2(p.x+1,p.y+1),cc.v2(p.x+1,p.y-1),cc.v2(p.x-1,p.y+1),cc.v2(p.x-1,p.y+1)]
-                for(let i = 0;i < indexs.length;i++){
-                    if(!boomMap[`x=${indexs[i].x}y=${indexs[i].y}`]&&GameWorld.isPosIndexValid(indexs[i])&&!this.isPosBlock(indexs[i])){
+            if (this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_CROSS) {
+                let indexs = [cc.v2(p.x - 2, p.y), cc.v2(p.x - 1, p.y), cc.v2(p.x + 1, p.y), cc.v2(p.x + 2, p.y)
+                    , cc.v2(p.x, p.y - 2), cc.v2(p.x, p.y - 1), cc.v2(p.x, p.y + 1), cc.v2(p.x, p.y + 2)
+                    , cc.v2(p.x + 1, p.y + 1), cc.v2(p.x + 1, p.y - 1), cc.v2(p.x - 1, p.y + 1), cc.v2(p.x - 1, p.y + 1)]
+                for (let i = 0; i < indexs.length; i++) {
+                    if (!boomMap[`x=${indexs[i].x}y=${indexs[i].y}`] && GameWorld.isPosIndexValid(indexs[i]) && !this.isPosObstacle(indexs[i])) {
                         hasSpecial = true;
-                        boomMap[`x=${indexs[i].x}y=${indexs[i].y}`] = new BoomData(indexs[i].x, indexs[i].y, false, this.map[indexs[i].x][indexs[i].y].data.tileSpecial,true);
-                    }else if(boomMap[`x=${indexs[i].x}y=${indexs[i].y}`]){
+                        boomMap[`x=${indexs[i].x}y=${indexs[i].y}`] = new BoomData(indexs[i].x, indexs[i].y, false, this.map[indexs[i].x][indexs[i].y].data.tileSpecial, true);
+                    } else if (boomMap[`x=${indexs[i].x}y=${indexs[i].y}`]) {
                         boomMap[`x=${indexs[i].x}y=${indexs[i].y}`].isExtraBoom = true;
                     }
                 }
             }
-            if(this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_FIVE){
-                for(let i = 0;i < this.map.length;i++){
-                    for(let j = 0;j < this.map[0].length;j++){
-                        if(!boomMap[`x=${i}y=${j}`]&&!this.isPosBlock(cc.v2(i, j))&&this.isTypeEqual(cc.v2(p.x,p.y),cc.v2(i,j))){
+            if (this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_FIVE) {
+                for (let i = 0; i < this.map.length; i++) {
+                    for (let j = 0; j < this.map[0].length; j++) {
+                        if (!boomMap[`x=${i}y=${j}`] && !this.isPosObstacle(cc.v2(i, j)) && this.isTypeEqual(cc.v2(p.x, p.y), cc.v2(i, j))) {
                             hasSpecial = true;
-                            boomMap[`x=${i}y=${j}`]=new BoomData(i, j, false, this.map[i][j].data.tileSpecial,true);
-                        }else if(boomMap[`x=${i}y=${j}`]){
+                            boomMap[`x=${i}y=${j}`] = new BoomData(i, j, false, this.map[i][j].data.tileSpecial, true);
+                        } else if (boomMap[`x=${i}y=${j}`]) {
                             boomMap[`x=${i}y=${j}`].isExtraBoom = true;
                         }
                     }
                 }
-                
+
             }
         }
         //去重
         boomList = [];
         for (let k in boomMap) {
             let pos = boomMap[k];
-            if (!this.map[pos.x][pos.y].data.isBlock) {
+            if (!this.map[pos.x][pos.y].data.isObstacle) {
                 boomList.push(pos);
             }
         }
         cc.log(boomList);
-        if(hasSpecial){
+        if (hasSpecial) {
             boomList = this.getExBoomList(boomList);
         }
         return boomList;
@@ -665,7 +723,7 @@ export default class GameWorld extends cc.Component {
                 if (!isCenter) {
                     isCenter = i == Math.floor(templist.length / 2);
                 }
-                boomList.push(new BoomData(templist[i].x, templist[i].y, isCenter && !hasCenter && templist.length > 3, type,false));
+                boomList.push(new BoomData(templist[i].x, templist[i].y, isCenter && !hasCenter && templist.length > 3, type, false));
                 if (isCenter) {
                     hasCenter = true;
                 }
@@ -700,8 +758,8 @@ export default class GameWorld extends cc.Component {
                     countSingle++;
                 } else {
                     if (countSingle > 0) {
-                        if(!isSave){
-                            count+=countSingle;
+                        if (!isSave) {
+                            count += countSingle;
                         }
                         isSave = true;
                         fallList.push(cc.v3(i, j, count));
@@ -745,7 +803,7 @@ export default class GameWorld extends cc.Component {
         if (!GameWorld.isPosIndexValid(pos1)) { return false; }
         if (!GameWorld.isPosIndexValid(pos2)) { return false; }
 
-        if (this.isBlockOrEmptyType(this.map[pos1.x][pos1.y].data.tileType) || this.isBlockOrEmptyType(this.map[pos2.x][pos2.y].data.tileType)) {
+        if (this.isObstacleOrEmptyType(this.map[pos1.x][pos1.y].data.tileType) || this.isObstacleOrEmptyType(this.map[pos2.x][pos2.y].data.tileType)) {
             return false;
         }
         return this.map[pos1.x][pos1.y].data.tileType == this.map[pos2.x][pos2.y].data.tileType;
@@ -753,28 +811,28 @@ export default class GameWorld extends cc.Component {
     isDataTypeEqual(pos1: cc.Vec2, pos2: cc.Vec2, mapdata: TileData[][]): boolean {
         if (!GameWorld.isPosIndexValid(pos1)) { return false; }
         if (!GameWorld.isPosIndexValid(pos2)) { return false; }
-        if (this.isBlockOrEmptyType(mapdata[pos1.x][pos1.y].tileType) || this.isBlockOrEmptyType(mapdata[pos2.x][pos2.y].tileType)) {
+        if (this.isObstacleOrEmptyType(mapdata[pos1.x][pos1.y].tileType) || this.isObstacleOrEmptyType(mapdata[pos2.x][pos2.y].tileType)) {
             return false;
         }
         return mapdata[pos1.x][pos1.y].tileType == mapdata[pos2.x][pos2.y].tileType;
     }
-    private isBlockOrEmptyType(tileType: string): boolean {
-        if (tileType == '00' || tileType == 'b0') {
+    private isObstacleOrEmptyType(tileType: string): boolean {
+        if (tileType == TileData.EMPTY || tileType == TileData.OBSTACLE) {
             return true;
         }
         return false;
     }
-    private isPosBlock(pos: cc.Vec2): boolean {
+    private isPosObstacle(pos: cc.Vec2): boolean {
         if (GameWorld.isPosIndexValid(pos)) {
-            if (this.isTypeBlock(this.map[pos.x][pos.y].data.tileType)) {
+            if (this.isTypeObstacle(this.map[pos.x][pos.y].data.tileType)) {
                 return true;
             }
         }
 
         return false;
     }
-    private isTypeBlock(tileType: string): boolean {
-        if (tileType == 'b0') {
+    private isTypeObstacle(tileType: string): boolean {
+        if (tileType.indexOf('obstacle') > -1||tileType.indexOf('boss') > -1) {
             return true;
         }
         return false;

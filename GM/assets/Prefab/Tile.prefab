@@ -388,7 +388,7 @@
     },
     "_spriteFrame": null,
     "_texture": null,
-    "_stopped": false,
+    "_stopped": true,
     "playOnLoad": true,
     "autoRemoveOnFinish": false,
     "totalParticles": 50,
@@ -481,7 +481,7 @@
   },
   {
     "__type__": "cc.Node",
-    "_name": "effectblockboom",
+    "_name": "effectobstacleboom",
     "_objFlags": 0,
     "_parent": {
       "__id__": 1
@@ -564,7 +564,7 @@
     },
     "_spriteFrame": null,
     "_texture": null,
-    "_stopped": false,
+    "_stopped": true,
     "playOnLoad": true,
     "autoRemoveOnFinish": false,
     "totalParticles": 300,

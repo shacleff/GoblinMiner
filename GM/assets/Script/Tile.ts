@@ -23,7 +23,7 @@ export default class Tile extends cc.Component {
     sprite:cc.Sprite;
     glow:cc.Node;
     effectboom:cc.Node;
-    effectblockboom:cc.Node;
+    effectobstcleboom:cc.Node;
     static readonly  SPECIAL_NORMAL = 0;
     static readonly  SPECIAL_VERTICAL = 1;
     static readonly  SPECIAL_HORIZONTAL = 2;
@@ -36,10 +36,10 @@ export default class Tile extends cc.Component {
         this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
         this.glow = this.node.getChildByName('glow');
         this.effectboom = this.node.getChildByName('effectboom');
-        this.effectblockboom = this.node.getChildByName('effectblockboom');
+        this.effectobstcleboom = this.node.getChildByName('effectobstacleboom');
         this.glow.opacity = 0;
         this.effectboom.opacity = 0;
-        this.effectblockboom.opacity = 0;
+        this.effectobstcleboom.opacity = 0;
         this.node.on(cc.Node.EventType.TOUCH_START,()=>{
             if(!Logic.isPaused){
                 this.glow.opacity = 80;
@@ -84,9 +84,9 @@ export default class Tile extends cc.Component {
         this.effectboom.active = true;
         this.effectboom.runAction(cc.sequence(cc.fadeIn(0.1),cc.fadeOut(0.5),cc.callFunc(()=>{this.effectboom.active = false;})));
     }
-    showBoomBlockEffect(){
-        this.effectblockboom.active = true;
-        this.effectblockboom.runAction(cc.sequence(cc.fadeIn(0.1),cc.fadeOut(0.5),cc.callFunc(()=>{this.effectblockboom.active = false;})));
+    showBoomObstcleEffect(){
+        this.effectobstcleboom.active = true;
+        this.effectobstcleboom.runAction(cc.sequence(cc.fadeIn(0.1),cc.fadeOut(0.5),cc.callFunc(()=>{this.effectobstcleboom.active = false;})));
     }
     updateTile(){
         this.changeRes();
@@ -112,7 +112,11 @@ export default class Tile extends cc.Component {
             case 3:suffix='cross';break;
             case 4:suffix='five';break;
         }
+        if(this.data.isObstacle&&this.data.obstacleLevel>0){
+            suffix='level'+this.data.obstacleLevel;
+        }
         this.sprite.spriteFrame = Logic.spriteFrames[this.data.resName+suffix];
+        this.sprite.node.color = this.data.isBoss?cc.Color.BLACK:cc.Color.WHITE;
     }
     start () {
 
