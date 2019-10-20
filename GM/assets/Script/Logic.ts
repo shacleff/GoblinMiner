@@ -103,7 +103,7 @@ export default class Logic extends cc.Component {
         Logic.target = target;
     }
     static needBoss():boolean{
-        if(Logic.level%12==0){
+        if(Logic.level%2==0){
             return true;
         }
         return false;

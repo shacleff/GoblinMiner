@@ -4,7 +4,6 @@ import TileData from "./data/TileData";
 import Tile from "./Tile";
 import AudioPlayer from "./utils/AudioPlayer";
 import BoomData from "./data/BoomData";
-import SkillManager from "./manager/SkillManager";
 import Boss from "./Boss";
 import BossData from "./data/BossData";
 import Random from "./utils/Random";
@@ -32,7 +31,7 @@ export default class GameWorld extends cc.Component {
     private timeDelay = 0;
     private checkTimeDelay = 0;
     actorLayer: cc.Node;
-    boss:Boss;
+    boss: Boss;
     map: Tile[][] = [];
     obstacleMap: Tile[][] = [];
     static readonly BOTTOM_LINE_INDEX = 3;
@@ -74,8 +73,8 @@ export default class GameWorld extends cc.Component {
                 let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
                 tile.initTile(TileData.getRandomTileData(i, j));
                 if (j < GameWorld.OBSTACLE_HEIGHT) {
-                    tile.initTile(TileData.getObstacleTileData(i, j, Random.getRandomNum(0,1)));
-                    if(i>2&&i<6&&Logic.needBoss()){
+                    tile.initTile(TileData.getObstacleTileData(i, j, Random.getRandomNum(0, 1)));
+                    if (i > 2 && i < 6 && Logic.needBoss()) {
                         tile.initTile(TileData.getBossTileData(i, j, 1));
                     }
                 }
@@ -88,7 +87,7 @@ export default class GameWorld extends cc.Component {
             this.obstacleMap[i] = new Array();
             for (let j = 0; j < GameWorld.OBSTACLE_HEIGHT; j++) {
                 let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
-                tile.initTile(TileData.getObstacleTileData(i, j - GameWorld.OBSTACLE_HEIGHT, Random.getRandomNum(0,1)));
+                tile.initTile(TileData.getObstacleTileData(i, j - GameWorld.OBSTACLE_HEIGHT, Random.getRandomNum(0, 1)));
                 tile.node.opacity = 0;
                 this.actorLayer.addChild(tile.node);
                 this.obstacleMap[i][j] = tile;
@@ -99,26 +98,21 @@ export default class GameWorld extends cc.Component {
         this.checkMapValid();
         cc.log(this.showMap());
     }
-    initBoss(){
+    initBoss() {
         let bp = cc.instantiate(this.bossPrefab);
         this.actorLayer.addChild(bp);
         this.boss = bp.getComponent(Boss);
-        this.boss.node.active = false;
-        this.boss.data = new BossData(0,'boss000',cc.v2(4,1),3,3,cc.v2(0,0));
+        this.boss.data = new BossData(0, 'boss000', cc.v2(4, 1), 3, 3, cc.v2(0, 0));
         this.boss.init();
+        this.boss.enabled = false;
     }
-   updateBoss(){
-       if(!Logic.needBoss()){
-           return;
-       }
-       this.boss.node.active = true;
-       let health = Math.floor(Logic.level/12)*5;
-       if(health<1){
-           health = 1;
-       }
-       this.boss.data = new BossData(0,'boss000',cc.v2(4,1),3,3,cc.v2(health,health));
-       this.boss.init();
-   }
+    updateBoss() {
+        if (!Logic.needBoss()) {
+            return;
+        }
+        this.scheduleOnce(() => { this.boss.enabled = true; }, 0.1);
+
+    }
     /**检查地图有效性并重组 */
     checkMapValid() {
         let boomList = this.getBoomList([], []);
@@ -214,13 +208,14 @@ export default class GameWorld extends cc.Component {
                     let temp = this.obstacleMap[i][j];
                     this.obstacleMap[i][j] = this.map[i][j];
                     this.map[i][j] = temp;
-                    this.obstacleMap[i][j].initTile(TileData.getObstacleTileData(i, j - GameWorld.OBSTACLE_HEIGHT, Random.getRandomNum(0,1)));
-                    if(i>2&&i<6&&Logic.needBoss()){
-                        this.obstacleMap[i][j].initTile(TileData.getBossTileData(i, j, 1));
+                    this.obstacleMap[i][j].initTile(TileData.getObstacleTileData(i, j - GameWorld.OBSTACLE_HEIGHT, Random.getRandomNum(0, 1)));
+                    if (i > 2 && i < 6 && Logic.needBoss()) {
+                        this.map[i][j].initTile(TileData.getBossTileData(i, j, 1));
                     }
                     this.obstacleMap[i][j].node.opacity = 0;
                 }
             }
+            this.updateBoss();
             this.isTopDown = false;
         }, speed * 1.5)
     }
@@ -289,7 +284,7 @@ export default class GameWorld extends cc.Component {
     checkMapHasTopObstacle(): boolean {
         for (let i = 0; i < this.map.length; i++) {
             for (let j = 2; j < this.map[0].length; j++) {
-                if (this.isTypeObstacle(this.map[i][j].data.tileType)||this.map[i][j].data.isBoss) {
+                if (this.isTypeObstacle(this.map[i][j].data.tileType) || this.map[i][j].data.isBoss) {
                     return true;
                 }
             }
@@ -437,15 +432,12 @@ export default class GameWorld extends cc.Component {
                         this.map[p.x][p.y].node.opacity = 255;
                         this.map[p.x][p.y].updateTile();
                         cc.log(p);
-                    } else if (this.map[p.x][p.y].data.isBoss) {
+                    } else if (this.map[p.x][p.y].data.isBoss && this.boss.enabled) {
                         this.boss.takeDamge(1);
-                        if(this.boss.isDied){
-                            this.boss.isDied = false;
-                            this.boss.node.active = false;
+                        if (this.boss.isDied) {
+                            this.boss.enabled = false;
                             this.clearBossTile();
                         }
-                        this.map[p.x][p.y].node.opacity = 0;
-                        this.map[p.x][p.y].updateTile();
                     } else if (this.isPosObstacle(cc.v2(p.x, p.y)) && this.map[p.x][p.y].data.obstacleLevel > 0) {
                         this.map[p.x][p.y].node.opacity = 255;
                         this.map[p.x][p.y].data.obstacleLevel--;
@@ -461,14 +453,40 @@ export default class GameWorld extends cc.Component {
                 })));
         }
     }
-    clearBossTile(){
+    clearBossTile() {
         for (let i = 0; i < this.map.length; i++) {
             for (let j = 0; j < this.map[0].length; j++) {
                 if (this.map[i][j].data.isBoss) {
-                    this.map[i][j].initTile(TileData.getEmptyTileData(i,j));
-                    this.map[i][j].updateTile();
+                    this.map[i][j].node.opacity = 0;
+                    this.map[i][j].initTile(TileData.getEmptyTileData(i, j));
                 }
             }
+        }
+    }
+    bossAddObstacle() {
+        if (this.boss.isDied) {
+            return;
+        }
+        let obstacleLevel = 0;
+        if(Logic.level>30){
+            obstacleLevel = 1;
+        }
+        if(Logic.level>60){
+            obstacleLevel = 2;
+        }
+        cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.FALL_TILE } });
+        this.boss.attack();
+        let arr: cc.Vec2[] = new Array();
+        for (let i = 0; i < this.map.length; i++) {
+            for (let j = 0; j < this.map[0].length; j++) {
+                if (!this.map[i][j].data.isBoss && !this.map[i][j].data.isObstacle && !this.map[i][j].data.isEmpty) {
+                    arr.push(cc.v2(i, j));
+                }
+            }
+        }
+        if (arr.length > 18) {
+            let pos = arr[Random.getRandomNum(0, arr.length)];
+            this.map[pos.x][pos.y].initTile(TileData.getObstacleTileData(pos.x, pos.y, obstacleLevel));
         }
     }
     fallTiles() {
@@ -477,15 +495,13 @@ export default class GameWorld extends cc.Component {
         if (fallList.length > 0) {
             cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.FALL_TILE } });
         }
-        let count = 0;
         for (let i = 0; i < fallList.length; i++) {
             let p = fallList[i];
             this.switchTileData(cc.v2(p.x, p.y), cc.v2(p.x, p.y - p.z));
-            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.delayTime(this.speed * p.y / 8), cc.moveTo(this.speed * p.z, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()), cc.callFunc(() => {
-                count++;
-                if (count == fallList.length) {
-                    this.canFill = true;
-                }
+            if (i == fallList.length - 1) {
+                this.canFill = true;
+            }
+            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.moveTo(this.speed * p.z, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()), cc.callFunc(() => {
             })));
         }
         if (fallList.length < 1) {
@@ -509,15 +525,20 @@ export default class GameWorld extends cc.Component {
                         Logic.profile.data.level = Logic.level;
                     }
                     Logic.profile.saveData();
-                    if (boomList.length < 1 && Logic.step < 1) {
-                        cc.director.emit(EventConstant.GAME_OVER, { detail: { over: true } });
-                    } else if (boomList.length < 1 && !this.checkMapCanBoom()) {
-                        this.scheduleOnce(() => {
-                            this.randomSortMap(true);
-                        }, 1)
-                    } else if (boomList.length < 1 && !this.checkMapHasTopObstacle()) {
-                        this.downMap();
+                    if (boomList.length < 1) {
+                        if (Logic.step < 1) {
+                            cc.director.emit(EventConstant.GAME_OVER, { detail: { over: true } });
+                        } else if (!this.checkMapCanBoom()) {
+                            this.scheduleOnce(() => {
+                                this.randomSortMap(true);
+                            }, 1)
+                        } else if (!this.checkMapHasTopObstacle()) {
+                            this.downMap();
+                        } else {
+                            this.bossAddObstacle();
+                        }
                     }
+
                 }
             })));
             this.map[p.x][p.y].initTile(TileData.getRandomTileData(p.x, p.y));
@@ -832,7 +853,7 @@ export default class GameWorld extends cc.Component {
         return false;
     }
     private isTypeObstacle(tileType: string): boolean {
-        if (tileType.indexOf('obstacle') > -1||tileType.indexOf('boss') > -1) {
+        if (tileType.indexOf('obstacle') > -1 || tileType.indexOf('boss') > -1) {
             return true;
         }
         return false;

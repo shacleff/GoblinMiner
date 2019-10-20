@@ -32,6 +32,15 @@ export default class Boss extends cc.Component {
 
     start () {
     }
+    onEnable(){
+       let health = Math.floor(Logic.level/3);
+        if(health<1){
+            health = 1;
+        }
+        this.isDied = false;
+        this.data = new BossData(0,'boss000',cc.v2(4,1),3,3,cc.v2(health,health));
+        this.init();
+    }
     takeDamge(damage:number){
         if(this.isDied){
             return;
@@ -43,11 +52,18 @@ export default class Boss extends cc.Component {
         this.data.health.x-=damage;
         if(this.data.health.x<=0){
             this.isDied = true;
+            this.kill();
         }
         cc.director.emit(EventConstant.HUD_UPDATE_HEATH_BAR, { detail: { health: this.data.health } });
     }
     kill(){
-       
+       this.node.position = GameWorld.getPosInMap(cc.v2(this.data.posIndex.x,this.data.posIndex.y-8));
+    }
+    attack(){
+        if(!this.anim){
+            this.anim = this.getComponent(cc.Animation);
+        }
+        this.anim.play('BossAttack');
     }
     init(){
         this.node.position = GameWorld.getPosInMap(this.data.posIndex);
