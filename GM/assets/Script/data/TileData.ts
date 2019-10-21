@@ -53,7 +53,7 @@ export default class TileData{
         return new TileData(tt, cc.v2(x, y), tt,false,false,0,false);
     }
     static getObstacleTileData(x:number,y:number,level:number):TileData{
-        let tt = 'obstacle000';
+        let tt = 'obstacle001';
         return new TileData(tt, cc.v2(x, y), tt,false,true,level,false);
     }
     static getBossTileData(x:number,y:number,level:number):TileData{

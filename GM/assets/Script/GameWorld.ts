@@ -468,10 +468,10 @@ export default class GameWorld extends cc.Component {
             return;
         }
         let obstacleLevel = 0;
-        if(Logic.level>30){
+        if(Logic.level>20){
             obstacleLevel = 1;
         }
-        if(Logic.level>60){
+        if(Logic.level>40){
             obstacleLevel = 2;
         }
         cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.FALL_TILE } });
@@ -486,7 +486,11 @@ export default class GameWorld extends cc.Component {
         }
         if (arr.length > 18) {
             let pos = arr[Random.getRandomNum(0, arr.length)];
-            this.map[pos.x][pos.y].initTile(TileData.getObstacleTileData(pos.x, pos.y, obstacleLevel));
+            this.map[pos.x][pos.y].initTile(TileData.getObstacleTileData(pos.x, pos.y, Random.getRandomNum(0,obstacleLevel)));
+            if(Logic.level>60){
+                pos = arr[Random.getRandomNum(0, arr.length)];
+                this.map[pos.x][pos.y].initTile(TileData.getObstacleTileData(pos.x, pos.y, Random.getRandomNum(0,obstacleLevel)));
+            }
         }
     }
     fallTiles() {
