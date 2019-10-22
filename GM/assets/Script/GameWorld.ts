@@ -467,6 +467,10 @@ export default class GameWorld extends cc.Component {
         if (this.boss.isDied) {
             return;
         }
+        if(this.boss.isHurt){
+            this.boss.isHurt = false;
+            return;
+        }
         let obstacleLevel = 0;
         if(Logic.level>20){
             obstacleLevel = 1;

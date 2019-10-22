@@ -77,18 +77,14 @@ export default class NewClass extends cc.Component {
         this.skillNode = this.node.getChildByName('skill');
         this.skillNode.removeAllChildren();
         this.skillManager.gameWorld = this.gameWorld;
-        for(let i = 0;i< 3;i++){
+        for(let key in Logic.skills){
             let pb = cc.instantiate(this.skillPrefab);
             let icon = pb.getComponent(SkillIcon);
             this.skillList.push(icon);
             this.skillNode.addChild(pb);
+            icon.data.valueCopy(Logic.skills[key]);
+            icon.init(this.skillManager,this.skillTipsNode);
         }
-        this.skillList[0].data.init('','','skill001',0,0,0,0,3,0,0);
-        this.skillList[1].data.init('','','skill002',6,6,0,0,1,0,1);
-        this.skillList[2].data.init('','','skill003',0,0,6,6,1,0,0);
-        this.skillList[0].init(this.skillManager,this.skillTipsNode);
-        this.skillList[1].init(this.skillManager,this.skillTipsNode);
-        this.skillList[2].init(this.skillManager,this.skillTipsNode);
     }
     //button
     playAgain(){

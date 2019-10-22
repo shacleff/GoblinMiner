@@ -22,6 +22,7 @@ export default class Boss extends cc.Component {
     sprite:cc.Sprite;
     isDied = false;
     anim:cc.Animation;
+    isHurt = false;
     // LIFE-CYCLE CALLBACKS:
 
     onLoad () {
@@ -33,10 +34,11 @@ export default class Boss extends cc.Component {
     start () {
     }
     onEnable(){
-       let health = Math.floor(Logic.level/3*2);
+       let health = Math.floor(Logic.level/3*3);
         if(health<1){
             health = 1;
         }
+        this.isHurt = false;
         this.isDied = false;
         this.data = new BossData(0,'boss000',cc.v2(4,1),3,3,cc.v2(health,health));
         this.init();
@@ -45,6 +47,7 @@ export default class Boss extends cc.Component {
         if(this.isDied){
             return;
         }
+        this.isHurt = true;
         if(!this.anim){
             this.anim = this.getComponent(cc.Animation);
         }

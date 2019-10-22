@@ -183,7 +183,7 @@
       "array": [
         0,
         0,
-        226.0055694580078,
+        453.79730224609375,
         0,
         0,
         0,
@@ -267,9 +267,9 @@
     "_opacity": 255,
     "_color": {
       "__type__": "cc.Color",
-      "r": 114,
-      "g": 114,
-      "b": 114,
+      "r": 71,
+      "g": 71,
+      "b": 71,
       "a": 255
     },
     "_contentSize": {
@@ -439,7 +439,7 @@
       "array": [
         0,
         0,
-        226.0055694580078,
+        453.79730224609375,
         0,
         0,
         0,
@@ -6975,7 +6975,7 @@
     "_active": true,
     "_components": [],
     "_prefab": null,
-    "_opacity": 255,
+    "_opacity": 0,
     "_color": {
       "__type__": "cc.Color",
       "r": 255,
@@ -7134,15 +7134,15 @@
     "_opacity": 255,
     "_color": {
       "__type__": "cc.Color",
-      "r": 255,
-      "g": 255,
-      "b": 255,
+      "r": 204,
+      "g": 222,
+      "b": 230,
       "a": 255
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 500,
-      "height": 150
+      "width": 560,
+      "height": 180
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -7194,18 +7194,18 @@
     "_useOriginalSize": false,
     "_string": "Label",
     "_N$string": "Label",
-    "_fontSize": 40,
-    "_lineHeight": 40,
+    "_fontSize": 25,
+    "_lineHeight": 25,
     "_enableWrapText": true,
     "_N$file": null,
     "_isSystemFontUsed": true,
     "_spacingX": 0,
     "_batchAsBitmap": false,
     "_N$horizontalAlign": 0,
-    "_N$verticalAlign": 1,
+    "_N$verticalAlign": 0,
     "_N$fontFamily": "Arial",
-    "_N$overflow": 1,
-    "_N$cacheMode": 0,
+    "_N$overflow": 2,
+    "_N$cacheMode": 2,
     "_id": "70BWHsCbVIWoRaTf6KYgoT"
   },
   {

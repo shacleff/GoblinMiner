@@ -44,7 +44,8 @@ export default class SkillIcon extends cc.Component {
             this.scheduleOnce(() => {
                 if (this.touchStart && this.skillTipsNode) {
                     this.isLongPress = true;
-                    this.skillTipsNode.getChildByName('label').getComponent(cc.Label).string = "test";
+                    let info = `${this.data.name}\n\n${this.data.desc}\n\n\n需要 红方：${this.data.red} 蓝星：${this.data.blue} 紫圆：${this.data.purple} 绿角：${this.data.green} 燃料：${this.data.oil}`
+                    this.skillTipsNode.getChildByName('label').getComponent(cc.Label).string = info;
                     this.skillTipsNode.opacity = 255;
                 }
             }, 0.3)

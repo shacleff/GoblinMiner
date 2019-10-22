@@ -1,4 +1,5 @@
 import ProfileManager from "./manager/ProfileManager";
+import SkillData from "./data/SkillData";
 
 // Learn TypeScript:
 //  - [Chinese] https://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -24,6 +25,8 @@ export default class Logic extends cc.Component {
     static maxstep = 15;
     //图片资源
     static spriteFrames: { [key: string]: cc.SpriteFrame } = null;
+    //技能
+    static skills: { [key: string]: SkillData } = null;
     static redpower = 0;
     static bluepower = 0;
     static purplepower = 0;

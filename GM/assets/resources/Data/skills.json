@@ -1,0 +1,38 @@
+[
+    {
+        "name": "燃油充能",
+        "resName": "skill001",
+        "desc":"将燃油转化为动力",
+        "red":0,
+        "blue":0,
+        "purple":0,
+        "green":0,
+        "oil":3,
+        "coin":0,
+        "operator":0
+    },
+    {
+        "name": "TNT",
+        "resName": "skill002",
+        "desc":"选择一个元素引爆它",
+        "red":6,
+        "blue":6,
+        "purple":0,
+        "green":0,
+        "oil":1,
+        "coin":0,
+        "operator":0
+    },
+    {
+        "name": "燃油收集",
+        "resName": "skill003",
+        "desc":"收集盘面上所有的燃油",
+        "red":0,
+        "blue":0,
+        "purple":6,
+        "green":6,
+        "oil":1,
+        "coin":0,
+        "operator":0
+    }
+]
