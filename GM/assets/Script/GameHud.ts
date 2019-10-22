@@ -51,17 +51,15 @@ export default class NewClass extends cc.Component {
     skillNode:cc.Node = null;
     skillList:SkillIcon[] = [];
     skillManager:SkillManager = new SkillManager();
+    skillTipsNode:cc.Node = null;
 
     bossHealth:cc.Vec2 = cc.v2(0,0);
-    
+
     // LIFE-CYCLE CALLBACKS:
 
     onLoad () {
         cc.director.on(EventConstant.GAME_OVER, (event) => {
             this.gameOver(event.detail.over);
-        })
-        cc.director.on(EventConstant.HUD_UPDATE_HEATH_BAR, (event) => {
-            this.bossHealth = cc.v2(event.detail.health.x,event.detail.health.y);
         })
         this.healthBar = this.node.getChildByName('healthBar').getComponent(cc.ProgressBar);
         this.healthLabel = this.node.getChildByName('healthBar').getChildByName('label').getComponent(cc.Label);
@@ -75,6 +73,7 @@ export default class NewClass extends cc.Component {
         this.purplelabel = this.node.getChildByName('bar').getChildByName('purplebar').getChildByName('label').getComponent(cc.Label);
         this.greenlabel = this.node.getChildByName('bar').getChildByName('greenbar').getChildByName('label').getComponent(cc.Label);
         this.oillabel = this.node.getChildByName('bar').getChildByName('oilbar').getChildByName('label').getComponent(cc.Label);
+        this.skillTipsNode = this.node.getChildByName('skillTips');
         this.skillNode = this.node.getChildByName('skill');
         this.skillNode.removeAllChildren();
         this.skillManager.gameWorld = this.gameWorld;
@@ -87,9 +86,9 @@ export default class NewClass extends cc.Component {
         this.skillList[0].data.init('','','skill001',0,0,0,0,3,0,0);
         this.skillList[1].data.init('','','skill002',6,6,0,0,1,0,1);
         this.skillList[2].data.init('','','skill003',0,0,6,6,1,0,0);
-        this.skillList[0].init(this.skillManager);
-        this.skillList[1].init(this.skillManager);
-        this.skillList[2].init(this.skillManager);
+        this.skillList[0].init(this.skillManager,this.skillTipsNode);
+        this.skillList[1].init(this.skillManager,this.skillTipsNode);
+        this.skillList[2].init(this.skillManager,this.skillTipsNode);
     }
     //button
     playAgain(){
@@ -116,6 +115,7 @@ export default class NewClass extends cc.Component {
     start () {
 
     }
+  
     checkTimeDelay = 0;
     isCheckTimeDelay(dt: number): boolean {
         this.checkTimeDelay += dt;

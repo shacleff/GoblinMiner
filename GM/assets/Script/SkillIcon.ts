@@ -25,27 +25,45 @@ export default class SkillIcon extends cc.Component {
     sprite: cc.Sprite;
     data: SkillData = new SkillData();
     isActive: boolean = false;
-    skillManager:SkillManager;
+    skillManager: SkillManager;
+    skillTipsNode: cc.Node = null;
+    isLongPress = false;
+    touchStart = false;
     onLoad() {
         this.effectChoose = this.node.getChildByName('effectChoose');
         this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
         this.effectChoose.active = false;
         cc.director.on(EventConstant.USE_SKILL, (event) => {
-            if(this.isActive){
+            if (this.isActive) {
                 this.doOperator(event.detail.tapPos, event.detail.targetPos);
             }
         })
         this.node.on(cc.Node.EventType.TOUCH_START, (event: cc.Event.EventTouch) => {
-            if(this.node.opacity != 255){
+            this.touchStart = true;
+            this.isLongPress = false;
+            this.scheduleOnce(() => {
+                if (this.touchStart && this.skillTipsNode) {
+                    this.isLongPress = true;
+                    this.skillTipsNode.getChildByName('label').getComponent(cc.Label).string = "test";
+                    this.skillTipsNode.opacity = 255;
+                }
+            }, 0.3)
+            if (this.node.opacity != 255) {
                 return;
             }
-            this.node.runAction(cc.scaleTo(0.2,1.2));
+            this.node.runAction(cc.scaleTo(0.2, 1.2));
         }, this);
         this.node.on(cc.Node.EventType.TOUCH_END, (event: cc.Event.EventTouch) => {
-            if(this.node.opacity != 255){
+            if (this.skillTipsNode) { this.skillTipsNode.opacity = 0; }
+            this.touchStart = false;
+            if(this.isLongPress){
+                this.isLongPress = false;
                 return;
             }
-            this.node.runAction(cc.scaleTo(0.2,1));
+            if (this.node.opacity != 255) {
+                return;
+            }
+            this.node.runAction(cc.scaleTo(0.2, 1));
             switch (this.data.operator) {
                 case SkillIcon.OPERATOR_TAP:
                     this.doOperator();
@@ -55,17 +73,25 @@ export default class SkillIcon extends cc.Component {
                     Logic.isUseSkillChoose = this.isActive;
                     break;
                 case SkillIcon.OPERATOR_SWIPE:
-                this.isActive = !this.isActive;
-                Logic.isUseSkillSwipe = this.isActive;
+                    this.isActive = !this.isActive;
+                    Logic.isUseSkillSwipe = this.isActive;
                     break;
             }
         }, this);
         this.node.on(cc.Node.EventType.TOUCH_CANCEL, (event: cc.Event.EventTouch) => {
-            this.node.runAction(cc.scaleTo(0.2,1));
+            this.touchStart = false;
+            if (this.skillTipsNode) { this.skillTipsNode.opacity = 0; }
+            if(this.isLongPress){
+                this.isLongPress = false;
+                return;
+            }
+            this.node.runAction(cc.scaleTo(0.2, 1));
+            
         }, this);
     }
-    init(skillManager:SkillManager){
+    init(skillManager: SkillManager, skillTipsNode: cc.Node) {
         this.skillManager = skillManager;
+        this.skillTipsNode = skillTipsNode;
         this.changeRes();
     }
     changeRes() {
@@ -75,10 +101,10 @@ export default class SkillIcon extends cc.Component {
         this.isActive = false;
         Logic.isUseSkillChoose = false;
         Logic.isUseSkillSwipe = false;
-        if(!this.skillManager){
+        if (!this.skillManager) {
             return;
         }
-        this.skillManager.doOperator(this.data,tapPos,targetPos);
+        this.skillManager.doOperator(this.data, tapPos, targetPos);
     }
     start() {
 
@@ -92,6 +118,7 @@ export default class SkillIcon extends cc.Component {
         }
         return false;
     }
+
     update(dt: number) {
         if (this.isCheckTimeDelay(dt)) {
             this.effectChoose.active = this.isActive;
