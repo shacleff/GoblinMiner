@@ -21,7 +21,7 @@
         "green":0,
         "oil":1,
         "coin":0,
-        "operator":0
+        "operator":1
     },
     {
         "name": "燃油收集",
