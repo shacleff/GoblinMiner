@@ -139,7 +139,9 @@ export default class NewClass extends cc.Component {
         this.purplebar.progress = Utils.lerpnum(this.purplebar.progress,Logic.purplepower/Logic.maxpurplepower,dt*5);
         this.greenbar.progress = Utils.lerpnum(this.greenbar.progress,Logic.greenpower/Logic.maxgreenpower,dt*5);
         this.oilbar.progress = Utils.lerpnum(this.oilbar.progress,Logic.oil/Logic.maxoilpower,dt*5);
-        this.healthBar.progress = Utils.lerpnum(this.healthBar.progress,this.bossHealth.x/this.bossHealth.y,dt*5);
+        if(this.bossHealth.y != 0){
+            this.healthBar.progress = Utils.lerpnum(this.healthBar.progress,this.bossHealth.x/this.bossHealth.y,dt*5);
+        }
         this.healthLabel.string = `${this.bossHealth.x}/${this.bossHealth.y}`;
         this.healthBar.node.opacity = this.bossHealth.x<=0?0:255;
         
