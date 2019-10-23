@@ -467,10 +467,7 @@ export default class GameWorld extends cc.Component {
         if (this.boss.isDied) {
             return;
         }
-        if(this.boss.isHurt){
-            this.boss.isHurt = false;
-            return;
-        }
+        
         let obstacleLevel = 0;
         if(Logic.level>20){
             obstacleLevel = 1;
@@ -479,6 +476,10 @@ export default class GameWorld extends cc.Component {
             obstacleLevel = 2;
         }
         cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.FALL_TILE } });
+        if(this.boss.isHurt){
+            this.boss.isHurt = false;
+            return;
+        }
         this.boss.attack();
         let arr: cc.Vec2[] = new Array();
         for (let i = 0; i < this.map.length; i++) {

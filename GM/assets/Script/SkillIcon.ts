@@ -56,6 +56,7 @@ export default class SkillIcon extends cc.Component {
         }, this);
         this.node.on(cc.Node.EventType.TOUCH_END, (event: cc.Event.EventTouch) => {
             if (this.skillTipsNode) { this.skillTipsNode.opacity = 0; }
+            this.node.runAction(cc.scaleTo(0.2, 1));
             this.touchStart = false;
             if(this.isLongPress){
                 this.isLongPress = false;
@@ -64,7 +65,6 @@ export default class SkillIcon extends cc.Component {
             if (this.node.opacity != 255) {
                 return;
             }
-            this.node.runAction(cc.scaleTo(0.2, 1));
             switch (this.data.operator) {
                 case SkillIcon.OPERATOR_TAP:
                     this.doOperator();
@@ -82,11 +82,11 @@ export default class SkillIcon extends cc.Component {
         this.node.on(cc.Node.EventType.TOUCH_CANCEL, (event: cc.Event.EventTouch) => {
             this.touchStart = false;
             if (this.skillTipsNode) { this.skillTipsNode.opacity = 0; }
+            this.node.runAction(cc.scaleTo(0.2, 1));
             if(this.isLongPress){
                 this.isLongPress = false;
                 return;
             }
-            this.node.runAction(cc.scaleTo(0.2, 1));
             
         }, this);
     }
