@@ -24,21 +24,27 @@ export default class MineStage extends cc.Component {
     @property(List)
     list: List = null;
     data: number[] = [];
-    currentLevel = 50;
+    level = 0;
 
     onLoad() {
+        this.level = Logic.level;
         this.data = [];
         for (let n: number = 0; n < 100; n++) {
-            this.data.push(n*30);
+            this.data.push(n*Logic.METRE_LENGTH);
         }
         this.list.numItems = this.data.length;
         this.scheduleOnce(()=>{
-            this.list.scrollTo(this.currentLevel,2,0.25,false);
-        },1);
+            this.list.scrollTo(this.level,2,0.25,false);
+        },0.5);
+        this.levellabel.node.on(cc.Node.EventType.TOUCH_END, (event: cc.Event.EventTouch) => {
+            this.scheduleOnce(()=>{
+                this.list.scrollTo(this.level,2,0.25,false);
+            },0.5);
+        }, this);
     }
 
     start() {
-        this.levellabel.string = `当前深度：${Logic.level} \n\n下一目标：${Logic.level + 30}`;
+        this.levellabel.string = `当前深度：${Logic.level*Logic.METRE_LENGTH} \n\n下一目标：${(Logic.level+1)*Logic.METRE_LENGTH}`;
     }
     goHome() {
         cc.director.loadScene('main');
@@ -46,20 +52,20 @@ export default class MineStage extends cc.Component {
     //网格列表2渲染器
     onListRender(item: cc.Node, idx: number) {
         item.getComponent(ListItem).title.getComponent(cc.Label).string = this.data[idx] + '';
-        item.getComponent(ListItem).icon.node.color = idx>this.currentLevel?cc.Color.BLACK:cc.Color.WHITE;
+        item.getComponent(ListItem).icon.node.color = idx>this.level?cc.Color.BLACK:cc.Color.WHITE;
         let finish:cc.Node = item.getComponent(ListItem).node.getChildByName('finish');
         let cover:cc.Node = item.getComponent(ListItem).node.getChildByName('cover');
-        cover.opacity = idx>this.currentLevel?200:128;
-        finish.opacity = idx>=this.currentLevel?0:200;
-        if(idx == this.currentLevel){
+        cover.opacity = idx>this.level?200:128;
+        finish.opacity = idx>=this.level?0:200;
+        if(idx == this.level){
             cover.opacity = 0;
         }
     }
     onItemClick(event:cc.Event){
         let item:ListItem = event.target.getComponent(ListItem);
         cc.log(item.listId);
-        if(item.listId <= this.currentLevel){
-            cc.director.loadScene('loading');
+        if(item.listId <= this.level){
+            Logic.loadGame(item.listId);
         }
     }
 

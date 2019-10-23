@@ -1,5 +1,6 @@
 import ProfileManager from "./manager/ProfileManager";
 import SkillData from "./data/SkillData";
+import Elements from "./manager/Elements";
 
 // Learn TypeScript:
 //  - [Chinese] https://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -15,28 +16,21 @@ const { ccclass, property } = cc._decorator;
 
 @ccclass
 export default class Logic extends cc.Component {
+    static readonly METRE_LENGTH = 10;
+    static readonly MAX_STEP = 15;
     static isPaused = false;
     static isProcessing = false;
-    static level = 0;
+    static level = 0;//整体关卡等级
+    static currentMeter = 0;//当前关卡的深度，每次下沉增加4米，在第20米遇到boss
+    static currentLevel = 0;//当前关卡的等级,每次开局设置选择的关卡等级
+    static step = 15;
     static coin = 0;
-    static oil = 0;
-    static target = 100000000;
-    static step =15;
-    static maxstep = 15;
     //图片资源
     static spriteFrames: { [key: string]: cc.SpriteFrame } = null;
     //技能
     static skills: { [key: string]: SkillData } = null;
-    static redpower = 0;
-    static bluepower = 0;
-    static purplepower = 0;
-    static greenpower = 0;
-    static maxredpower = 20;
-    static maxbluepower = 20;
-    static maxpurplepower = 20;
-    static maxgreenpower = 20;
-    static maxoilpower = 50;
-    static profile:ProfileManager = new ProfileManager();
+    static elements = new Elements();
+    static profile: ProfileManager = new ProfileManager();
     static isUseSkillSwipe = false;//是否使用滑动技能
     static isUseSkillChoose = false;//是否使用选择技能
     // LIFE-CYCLE CALLBACKS:
@@ -60,56 +54,38 @@ export default class Logic extends cc.Component {
         // cc.PhysicsManager.DrawBits.e_jointBit |
         // cc.PhysicsManager.DrawBits.e_shapeBit;
     }
-    static updateElements(arr:number[],needChange:boolean):boolean{
-        let r = Logic.getElementNumber(Logic.redpower,Logic.maxredpower,arr[0]);
-        let b = Logic.getElementNumber(Logic.bluepower,Logic.maxbluepower,arr[1]);
-        let p = Logic.getElementNumber(Logic.purplepower,Logic.maxpurplepower,arr[2]);
-        let g = Logic.getElementNumber(Logic.greenpower,Logic.maxgreenpower,arr[3]);
-        let o = Logic.getElementNumber(Logic.oil,Logic.maxoilpower,arr[4]);
-        let c = Logic.getElementNumber(Logic.coin,-1,arr[5]);
-        if(r.y<1||b.y<1||p.y<1||g.y<1||o.y<1||c.y<1){
-            return false;
-        }
-        if(needChange){
-            Logic.redpower = r.x;
-            Logic.bluepower = b.x;
-            Logic.greenpower = g.x;
-            Logic.purplepower = p.x;
-            Logic.oil = o.x;
-            Logic.coin = c.x;
-        }
-        return true;
+    static updateElements(arr: number[], needChange: boolean): boolean {
+        return Logic.elements.updateElements(arr, needChange);
     }
-    /**参数一是数值，参数二代表赋值是否成功 0：失败 1：成功 */
-    static getElementNumber(value:number,max:number,offset:number):cc.Vec2{
-        if(value-offset<0){
-            return cc.v2(value,0);
-        }
-        if(max!=-1&&value-offset>max){
-            value = max;
-        }
-        return cc.v2(value-offset,1);
-    }
-    static reset(target:number,step:number){
+
+    static reset() {
         Logic.isProcessing = false;
         Logic.isUseSkillSwipe = false;
         Logic.isUseSkillChoose = false;
         Logic.level = Logic.profile.data.level;
         Logic.coin = Logic.profile.data.coins;
-        Logic.oil = 0;
-        Logic.redpower = 0;
-        Logic.bluepower = 0;
-        Logic.greenpower = 0;
-        Logic.purplepower = 0;
-        Logic.step = step;
-        Logic.maxstep = step;
-        Logic.target = target;
+        Logic.currentLevel = 0;
+        Logic.elements = new Elements();
+        Logic.elements.coin = Logic.coin;
+        Logic.step = Logic.MAX_STEP;
+        Logic.currentMeter = 0;
     }
-    static needBoss():boolean{
-        if(Logic.level%2==0){
+    static needBoss(): boolean {
+        if (Logic.currentMeter >= Logic.METRE_LENGTH) {
             return true;
         }
         return false;
+    }
+    static saveData() {
+        Logic.level = Logic.currentLevel;
+        Logic.profile.data.level = Logic.level;
+        Logic.profile.data.coins = Logic.coin;
+        Logic.profile.saveData();
+    }
+    static loadGame(selectLevel:number){
+        Logic.reset();
+        Logic.currentLevel = selectLevel;
+        cc.director.loadScene('loading');
     }
     start() {
 

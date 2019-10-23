@@ -40,7 +40,7 @@ export default class GameWorld extends cc.Component {
     static HEIGHT_SIZE: number = 9;
     static MAPX: number = -GameWorld.WIDTH_SIZE * GameWorld.TILE_SIZE / 2;
     static MAPY: number = 128;
-    static readonly OBSTACLE_HEIGHT = 3;
+    static readonly OBSTACLE_HEIGHT = 4;
     canFall = false;//是否下落
     canFill = false;//是否填充
     isRandoming = false;//是否正在随机
@@ -72,7 +72,7 @@ export default class GameWorld extends cc.Component {
             for (let j = 0; j < GameWorld.HEIGHT_SIZE; j++) {
                 let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
                 tile.initTile(TileData.getRandomTileData(i, j));
-                if (j < GameWorld.OBSTACLE_HEIGHT) {
+                if (j < GameWorld.OBSTACLE_HEIGHT-1) {
                     tile.initTile(TileData.getObstacleTileData(i, j, Random.getRandomNum(0, 1)));
                     if (i > 2 && i < 6 && Logic.needBoss()) {
                         tile.initTile(TileData.getBossTileData(i, j, 1));
@@ -104,10 +104,13 @@ export default class GameWorld extends cc.Component {
         this.boss = bp.getComponent(Boss);
         this.boss.data = new BossData(0, 'boss000', cc.v2(4, 1), 3, 3, cc.v2(0, 0));
         this.boss.init();
+        this.boss.kill();
         this.boss.enabled = false;
     }
     updateBoss() {
         if (!Logic.needBoss()) {
+            this.boss.kill();
+            this.boss.enabled = false;
             return;
         }
         this.scheduleOnce(() => { this.boss.enabled = true; }, 0.1);
@@ -173,7 +176,7 @@ export default class GameWorld extends cc.Component {
     }
     /**地图下降 */
     downMap() {
-        Logic.level += 3;
+        Logic.currentMeter += 4;
         Logic.step += 3;
         let speed = 0.4;
         cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.FALL_DOWN } });
@@ -364,9 +367,7 @@ export default class GameWorld extends cc.Component {
             cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.BOOM_TILE } });
         }
         for (let i = 0; i < boomList.length; i++) {
-            // if (Logic.score >= Logic.target && Logic.step >= 0) {
-            //     cc.director.emit(EventConstant.GAME_OVER, { detail: { over: false } });
-            // }
+            
             let offset = 10;
             let speed = 0.05;
             let p = boomList[i];
@@ -379,32 +380,32 @@ export default class GameWorld extends cc.Component {
                 case Tile.SPECIAL_FIVE: more = 10; break;
             }
             if (this.map[p.x][p.y].data.tileType == TileData.OIL) {
-                Logic.oil += more;
-                if (Logic.oil > Logic.maxoilpower) {
-                    Logic.oil = Logic.maxoilpower;
+                Logic.elements.oil += more;
+                if (Logic.elements.oil > Logic.elements.oilmax) {
+                    Logic.elements.oil = Logic.elements.oilmax;
                 }
             } else if (this.map[p.x][p.y].data.tileType == TileData.COIN) {
                 Logic.coin += more;
             } else if (this.isTypeObstacle(this.map[p.x][p.y].data.tileType)) {
             } else if (this.map[p.x][p.y].data.tileType == TileData.RED) {
-                Logic.redpower += more;
-                if (Logic.redpower > Logic.maxredpower) {
-                    Logic.redpower = Logic.maxredpower;
+                Logic.elements.red += more;
+                if (Logic.elements.red > Logic.elements.redmax) {
+                    Logic.elements.red = Logic.elements.redmax;
                 }
             } else if (this.map[p.x][p.y].data.tileType == TileData.BLUE) {
-                Logic.bluepower += more;
-                if (Logic.bluepower > Logic.maxbluepower) {
-                    Logic.bluepower = Logic.maxbluepower;
+                Logic.elements.blue += more;
+                if (Logic.elements.blue > Logic.elements.bluemax) {
+                    Logic.elements.blue = Logic.elements.blue;
                 }
             } else if (this.map[p.x][p.y].data.tileType == TileData.PURPLE) {
-                Logic.purplepower += more;
-                if (Logic.purplepower > Logic.maxpurplepower) {
-                    Logic.purplepower = Logic.maxpurplepower;
+                Logic.elements.purple += more;
+                if (Logic.elements.purple > Logic.elements.purplemax) {
+                    Logic.elements.purple = Logic.elements.purplemax;
                 }
             } else if (this.map[p.x][p.y].data.tileType == TileData.GREEN) {
-                Logic.greenpower += more;
-                if (Logic.greenpower > Logic.maxgreenpower) {
-                    Logic.greenpower = Logic.maxgreenpower;
+                Logic.elements.green += more;
+                if (Logic.elements.green > Logic.elements.greenmax) {
+                    Logic.elements.green = Logic.elements.greenmax;
                 }
             }
             this.map[p.x][p.y].node.runAction(cc.sequence(
@@ -464,15 +465,15 @@ export default class GameWorld extends cc.Component {
         }
     }
     bossAddObstacle() {
-        if (this.boss.isDied) {
+        if (this.boss.isDied||!this.boss.enabled) {
             return;
         }
         
         let obstacleLevel = 0;
-        if(Logic.level>20){
+        if(Logic.currentLevel>2){
             obstacleLevel = 1;
         }
-        if(Logic.level>40){
+        if(Logic.currentLevel>4){
             obstacleLevel = 2;
         }
         cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.FALL_TILE } });
@@ -492,7 +493,7 @@ export default class GameWorld extends cc.Component {
         if (arr.length > 18) {
             let pos = arr[Random.getRandomNum(0, arr.length)];
             this.map[pos.x][pos.y].initTile(TileData.getObstacleTileData(pos.x, pos.y, Random.getRandomNum(0,obstacleLevel)));
-            if(Logic.level>60){
+            if(Logic.currentLevel>6){
                 pos = arr[Random.getRandomNum(0, arr.length)];
                 this.map[pos.x][pos.y].initTile(TileData.getObstacleTileData(pos.x, pos.y, Random.getRandomNum(0,obstacleLevel)));
             }
@@ -529,11 +530,7 @@ export default class GameWorld extends cc.Component {
                     let boomList = this.getBoomList([], []);
                     this.boomList = boomList;
                     this.boomTiles(boomList);
-                    Logic.profile.data.coins += Logic.coin;
-                    if (Logic.level - Logic.profile.data.level > 10) {
-                        Logic.profile.data.level = Logic.level;
-                    }
-                    Logic.profile.saveData();
+                    
                     if (boomList.length < 1) {
                         if (Logic.step < 1) {
                             cc.director.emit(EventConstant.GAME_OVER, { detail: { over: true } });
@@ -542,7 +539,11 @@ export default class GameWorld extends cc.Component {
                                 this.randomSortMap(true);
                             }, 1)
                         } else if (!this.checkMapHasTopObstacle()) {
-                            this.downMap();
+                            if(Logic.currentMeter>Logic.METRE_LENGTH){
+                                cc.director.emit(EventConstant.GAME_OVER, { detail: { over: false } });
+                            }else{
+                                this.downMap();
+                            }
                         } else {
                             this.bossAddObstacle();
                         }

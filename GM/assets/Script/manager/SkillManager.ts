@@ -45,8 +45,8 @@ export default class SkillManager {
         }
     }
     private changeOil() {
-        if (Logic.oil >= 3) {
-            Logic.oil -= 3;
+        if (Logic.elements.oil >= 3) {
+            Logic.elements.oil -= 3;
             Logic.step += 1;
             cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.SKILL_001 } });
             this.changeOil();

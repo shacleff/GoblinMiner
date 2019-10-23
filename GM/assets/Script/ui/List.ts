@@ -1,3 +1,5 @@
+import ListItem from "./ListItem";
+
 // Learn TypeScript:
 //  - [Chinese] https://docs.cocos.com/creator/manual/zh/scripting/typescript.html
 //  - [English] http://www.cocos2d-x.org/docs/creator/manual/en/scripting/typescript.html
@@ -10,7 +12,6 @@
 
 const { ccclass, property, disallowMultiple, menu, executionOrder, requireComponent } = cc._decorator;
 
-import ListItem from './ListItem';
 
 enum TemplateType {
     NODE = 1,

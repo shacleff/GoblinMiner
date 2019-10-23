@@ -34,9 +34,9 @@ export default class Boss extends cc.Component {
     start () {
     }
     onEnable(){
-       let health = Math.floor(Logic.level);
+       let health = Math.floor(Logic.currentLevel*10);
         if(health<1){
-            health = 1;
+            health = 5;
         }
         this.isHurt = false;
         this.isDied = false;

@@ -29,6 +29,8 @@ export default class NewClass extends cc.Component {
     coinlabel: cc.Label = null;
     @property(cc.Node)
     againDialog:cc.Node = null;
+    @property(cc.Node)
+    homeDialog:cc.Node = null;
     @property(cc.Sprite)
     dialogPlayer:cc.Sprite = null;
     @property(cc.Prefab)
@@ -93,22 +95,28 @@ export default class NewClass extends cc.Component {
     playAgain(){
         this.againDialog.active = false;
         Logic.isPaused = false;
+        Logic.reset();
         cc.director.emit(EventConstant.INIT_MAP);
-        if(Logic.target<=Logic.level){
-            Logic.reset(Logic.target+100,Logic.maxstep+5);
-        }else{
-            Logic.reset(Logic.target,Logic.maxstep);
-        }
+
     }
     goHome(){
-        Logic.reset(Logic.target,Logic.maxstep);
+        Logic.reset();
         cc.director.loadScene('main');
     }
     gameOver(over:boolean){
-        this.dialogPlayer.spriteFrame = Logic.spriteFrames[over?'player4':'player']
+        if(!over){
+            Logic.saveData();
+            Logic.reset();
+            cc.director.loadScene('mine');
+            return;
+        }
+        this.dialogPlayer.spriteFrame = Logic.spriteFrames['player4']
         this.againDialog.active = true;
         Logic.isPaused = true;
         
+    }
+    showHomeDialog(){
+        this.homeDialog.active = !this.homeDialog.active;
     }
 
     start () {
@@ -127,18 +135,18 @@ export default class NewClass extends cc.Component {
     update (dt) {
         
         this.steplabel.string = `${Logic.step}`;
-        this.levellabel.string = `Lv：${Logic.level}`;
+        this.levellabel.string = `深度：${Logic.currentLevel+Logic.currentMeter}米`;
         this.coinlabel.string = `：${Logic.coin}`;
-        this.redlabel.string = `${Logic.redpower}/${Logic.maxredpower}`
-        this.bluelabel.string = `${Logic.bluepower}/${Logic.maxbluepower}`
-        this.purplelabel.string = `${Logic.purplepower}/${Logic.maxpurplepower}`
-        this.greenlabel.string = `${Logic.greenpower}/${Logic.maxgreenpower}`
-        this.oillabel.string = `${Logic.oil}/${Logic.maxoilpower}`
-        this.redbar.progress = Utils.lerpnum(this.redbar.progress,Logic.redpower/Logic.maxredpower,dt*5);
-        this.bluebar.progress = Utils.lerpnum(this.bluebar.progress,Logic.bluepower/Logic.maxbluepower,dt*5);
-        this.purplebar.progress = Utils.lerpnum(this.purplebar.progress,Logic.purplepower/Logic.maxpurplepower,dt*5);
-        this.greenbar.progress = Utils.lerpnum(this.greenbar.progress,Logic.greenpower/Logic.maxgreenpower,dt*5);
-        this.oilbar.progress = Utils.lerpnum(this.oilbar.progress,Logic.oil/Logic.maxoilpower,dt*5);
+        this.redlabel.string = `${Logic.elements.red}/${Logic.elements.redmax}`
+        this.bluelabel.string = `${Logic.elements.blue}/${Logic.elements.bluemax}`
+        this.purplelabel.string = `${Logic.elements.purple}/${Logic.elements.purplemax}`
+        this.greenlabel.string = `${Logic.elements.green}/${Logic.elements.greenmax}`
+        this.oillabel.string = `${Logic.elements.oil}/${Logic.elements.oilmax}`
+        this.redbar.progress = Utils.lerpnum(this.redbar.progress,Logic.elements.red/Logic.elements.redmax,dt*5);
+        this.bluebar.progress = Utils.lerpnum(this.bluebar.progress,Logic.elements.blue/Logic.elements.bluemax,dt*5);
+        this.purplebar.progress = Utils.lerpnum(this.purplebar.progress,Logic.elements.purple/Logic.elements.purplemax,dt*5);
+        this.greenbar.progress = Utils.lerpnum(this.greenbar.progress,Logic.elements.green/Logic.elements.greenmax,dt*5);
+        this.oilbar.progress = Utils.lerpnum(this.oilbar.progress,Logic.elements.oil/Logic.elements.oilmax,dt*5);
         if(this.bossHealth.y != 0){
             this.healthBar.progress = Utils.lerpnum(this.healthBar.progress,this.bossHealth.x/this.bossHealth.y,dt*5);
         }

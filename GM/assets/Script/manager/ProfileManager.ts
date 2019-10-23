@@ -27,18 +27,18 @@ export default class ProfileManager{
     }
    
     getSaveData():ProfileData{
-        let s = cc.sys.localStorage.getItem('data');
+        let s = cc.sys.localStorage.getItem('goblindata');
         if(s){
             return JSON.parse(s);
         }
         return null;
     }
     saveData(){
-        cc.sys.localStorage.setItem('data',JSON.stringify(this.data));
+        cc.sys.localStorage.setItem('goblindata',JSON.stringify(this.data));
         console.log('save data');
     }
     clearData(){
-        cc.sys.localStorage.setItem('data','');
+        cc.sys.localStorage.setItem('goblindata','');
         this.data.clearData();
         console.log('clear data');
     }
