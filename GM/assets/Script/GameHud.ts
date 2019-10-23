@@ -61,6 +61,9 @@ export default class NewClass extends cc.Component {
         cc.director.on(EventConstant.GAME_OVER, (event) => {
             this.gameOver(event.detail.over);
         })
+        cc.director.on(EventConstant.HUD_UPDATE_HEATH_BAR, (event) => {
+            this.bossHealth = cc.v2(event.detail.health.x,event.detail.health.y);
+        })
         this.healthBar = this.node.getChildByName('healthBar').getComponent(cc.ProgressBar);
         this.healthLabel = this.node.getChildByName('healthBar').getChildByName('label').getComponent(cc.Label);
         this.redbar = this.node.getChildByName('bar').getChildByName('redbar').getComponent(cc.ProgressBar);

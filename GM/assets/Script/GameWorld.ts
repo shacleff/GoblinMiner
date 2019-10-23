@@ -35,7 +35,7 @@ export default class GameWorld extends cc.Component {
     map: Tile[][] = [];
     obstacleMap: Tile[][] = [];
     static readonly BOTTOM_LINE_INDEX = 3;
-    static readonly TILE_SIZE: number = 80;
+    static readonly TILE_SIZE: number = 64;
     static WIDTH_SIZE: number = 9;
     static HEIGHT_SIZE: number = 9;
     static MAPX: number = -GameWorld.WIDTH_SIZE * GameWorld.TILE_SIZE / 2;

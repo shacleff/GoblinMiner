@@ -43,8 +43,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 100,
-      "height": 100
+      "width": 64,
+      "height": 64
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -107,8 +107,8 @@
     },
     "_contentSize": {
       "__type__": "cc.Size",
-      "width": 100,
-      "height": 100
+      "width": 64,
+      "height": 64
     },
     "_anchorPoint": {
       "__type__": "cc.Vec2",
@@ -233,9 +233,9 @@
         0,
         0,
         1,
-        0.6700000166893005,
-        0.699999988079071,
-        0.6700000166893005
+        0.4000000059604645,
+        0.4000000059604645,
+        1
       ]
     },
     "_eulerAngles": {
