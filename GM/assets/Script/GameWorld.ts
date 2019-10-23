@@ -72,9 +72,9 @@ export default class GameWorld extends cc.Component {
             for (let j = 0; j < GameWorld.HEIGHT_SIZE; j++) {
                 let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
                 tile.initTile(TileData.getRandomTileData(i, j));
-                if (j < GameWorld.OBSTACLE_HEIGHT-1) {
+                if (j < GameWorld.OBSTACLE_HEIGHT) {
                     tile.initTile(TileData.getObstacleTileData(i, j, Random.getRandomNum(0, 1)));
-                    if (i > 2 && i < 6 && Logic.needBoss()) {
+                    if (i > 2 && i < 6 && Logic.needBoss()&&j < GameWorld.OBSTACLE_HEIGHT-1) {
                         tile.initTile(TileData.getBossTileData(i, j, 1));
                     }
                 }
@@ -212,7 +212,7 @@ export default class GameWorld extends cc.Component {
                     this.obstacleMap[i][j] = this.map[i][j];
                     this.map[i][j] = temp;
                     this.obstacleMap[i][j].initTile(TileData.getObstacleTileData(i, j - GameWorld.OBSTACLE_HEIGHT, Random.getRandomNum(0, 1)));
-                    if (i > 2 && i < 6 && Logic.needBoss()) {
+                    if (i > 2 && i < 6 && Logic.needBoss()&&j < this.obstacleMap[0].length-1) {
                         this.map[i][j].initTile(TileData.getBossTileData(i, j, 1));
                     }
                     this.obstacleMap[i][j].node.opacity = 0;

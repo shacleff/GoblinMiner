@@ -77,7 +77,9 @@ export default class Logic extends cc.Component {
         return false;
     }
     static saveData() {
-        Logic.level = Logic.currentLevel;
+        if(Logic.currentLevel+1>Logic.level){
+            Logic.level = Logic.currentLevel+1;
+        }
         Logic.profile.data.level = Logic.level;
         Logic.profile.data.coins = Logic.coin;
         Logic.profile.saveData();
