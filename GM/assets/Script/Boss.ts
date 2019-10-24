@@ -63,6 +63,7 @@ export default class Boss extends cc.Component {
             this.hideBoss();
             this.clearBossTile();
             this.enabled = false;
+            Logic.step += 3;
 
         }
         cc.director.emit(EventConstant.HUD_UPDATE_HEATH_BAR, { detail: { health: this.data.health } });

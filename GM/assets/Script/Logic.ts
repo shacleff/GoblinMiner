@@ -17,7 +17,7 @@ const { ccclass, property } = cc._decorator;
 @ccclass
 export default class Logic extends cc.Component {
     static readonly METRE_LENGTH = 10;
-    static readonly MAX_STEP = 99;
+    static readonly MAX_STEP = 15;
     static isPaused = false;
     static isProcessing = false;
     static level = 0;//整体关卡等级
