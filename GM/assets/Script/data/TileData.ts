@@ -15,8 +15,8 @@ export default class TileData{
     posIndex:cc.Vec2 = cc.v2(0,0);
     tileSpecial = 0;//0普通 1橫四连 2竖四连 3十字连 4五连
     isEmpty = false;//是否为空
-    isObstacle = false;//是否是障碍
-    obstacleLevel = 0;//障碍等级，决定障碍需要几次才能消除，只有为0的时候才能消除,该单位大于9999的话代表不可消除
+    isObstacle = false;//是否是障碍，本身类型不为障碍而是普通元素的话，显示为冰块
+    obstacleLevel = 0;//障碍等级，决定障碍需要几次才能消除，只有为0的时候才能消除,该单位大于999的话代表不可消除
     isBoss = false;//是否是头目障碍,头目出现的情况下无法正常清除，被爆炸的情况下会对头目造成伤害
     constructor(tileType:string,pos:cc.Vec2,resName:string,isEmpty:boolean,isObstacle:boolean,obstacleLevel:number,isBoss:boolean){
         this.tileType = tileType;
@@ -59,5 +59,11 @@ export default class TileData{
     static getBossTileData(x:number,y:number,level:number):TileData{
         let tt = 'boss000';
         return new TileData(tt, cc.v2(x, y), tt,false,true,0,true);
+    }
+    static isTypeObstacleOrBoss(tileType: string): boolean {
+        if (tileType.indexOf('obstacle') > -1 || tileType.indexOf('boss') > -1) {
+            return true;
+        }
+        return false;
     }
 }

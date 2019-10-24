@@ -34,5 +34,17 @@
         "oil":1,
         "coin":0,
         "operator":0
+    },
+    {
+        "name": "精准采集",
+        "resName": "skill004",
+        "desc":"挖掉一个指定元素,并获得2倍效果",
+        "red":3,
+        "blue":3,
+        "purple":3,
+        "green":3,
+        "oil":0,
+        "coin":0,
+        "operator":1
     }
 ]

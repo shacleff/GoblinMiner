@@ -1,5 +1,6 @@
 import Logic from "./Logic";
 import SkillData from "./data/SkillData";
+import Random from "./utils/Random";
 
 // Learn TypeScript:
 //  - [Chinese] https://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -18,9 +19,12 @@ export default class Loading extends cc.Component {
 
     @property(cc.Node)
     ui: cc.Node = null;
+    @property(cc.Label)
+    label:cc.Label = null;
     private timeDelay = 0;
     private isSpriteFramesLoaded = false;
     private isSkillsLoaded = false;
+    private readonly TIPS = [`矿工祈祷中...`,`长按技能可以查看说明`,`及时补充能量`,`boss会被周围方块炸伤`];
     // LIFE-CYCLE CALLBACKS:
 
     // onLoad () {}
@@ -28,6 +32,7 @@ export default class Loading extends cc.Component {
     start () {
         this.loadSpriteFrames();
         this.loadSkills();
+        this.label.string = this.TIPS[Random.getRandomNum(0,this.TIPS.length-1)];
     }
     loadSpriteFrames() {
         if (Logic.spriteFrames) {
@@ -71,8 +76,8 @@ export default class Loading extends cc.Component {
             this.timeDelay = 0;
             this.isSpriteFramesLoaded = false;
             cc.director.preloadScene('game',()=>{},()=>{
-                this.ui.runAction(cc.fadeOut(0.1));
-                this.scheduleOnce(()=>{cc.director.loadScene('game');},0.1);
+                this.ui.runAction(cc.fadeOut(1));
+                this.scheduleOnce(()=>{cc.director.loadScene('game');},1);
             })
         }
 

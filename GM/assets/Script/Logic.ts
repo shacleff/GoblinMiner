@@ -17,13 +17,13 @@ const { ccclass, property } = cc._decorator;
 @ccclass
 export default class Logic extends cc.Component {
     static readonly METRE_LENGTH = 10;
-    static readonly MAX_STEP = 15;
+    static readonly MAX_STEP = 99;
     static isPaused = false;
     static isProcessing = false;
     static level = 0;//整体关卡等级
     static currentMeter = 0;//当前关卡的深度，每次下沉增加4米，在第20米遇到boss
     static currentLevel = 0;//当前关卡的等级,每次开局设置选择的关卡等级
-    static step = 15;
+    static step = 0;
     static coin = 0;
     //图片资源
     static spriteFrames: { [key: string]: cc.SpriteFrame } = null;
@@ -53,6 +53,7 @@ export default class Logic extends cc.Component {
         // cc.PhysicsManager.DrawBits.e_centerOfMassBit |
         // cc.PhysicsManager.DrawBits.e_jointBit |
         // cc.PhysicsManager.DrawBits.e_shapeBit;
+        Logic.reset();
     }
     static updateElements(arr: number[], needChange: boolean): boolean {
         return Logic.elements.updateElements(arr, needChange);

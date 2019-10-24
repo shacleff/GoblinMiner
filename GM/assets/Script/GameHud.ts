@@ -103,6 +103,9 @@ export default class NewClass extends cc.Component {
         Logic.reset();
         cc.director.loadScene('main');
     }
+    cheat(){
+        this.gameOver(false);
+    }
     gameOver(over:boolean){
         if(!over){
             Logic.saveData();
@@ -135,7 +138,7 @@ export default class NewClass extends cc.Component {
     update (dt) {
         
         this.steplabel.string = `${Logic.step}`;
-        this.levellabel.string = `深度：${Logic.currentLevel+Logic.currentMeter}米`;
+        this.levellabel.string = `深度：${Logic.currentLevel*Logic.METRE_LENGTH+Logic.currentMeter}米`;
         this.coinlabel.string = `：${Logic.coin}`;
         this.redlabel.string = `${Logic.elements.red}/${Logic.elements.redmax}`
         this.bluelabel.string = `${Logic.elements.blue}/${Logic.elements.bluemax}`
