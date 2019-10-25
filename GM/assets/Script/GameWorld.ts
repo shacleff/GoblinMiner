@@ -8,6 +8,7 @@ import Boss from "./Boss";
 import BossData from "./data/BossData";
 import Random from "./utils/Random";
 import MapHelper from "./utils/MapHelper";
+import FallData from "./data/FallData";
 
 // Learn TypeScript:
 //  - [Chinese] http://docs.cocos.com/creator/manual/zh/scripting/typescript.html
@@ -79,6 +80,9 @@ export default class GameWorld extends cc.Component {
                         tile.initTile(TileData.getBossTileData(i, j, 1));
                     }
                 }
+                if(j==7&&i>2&&i<6){
+                    tile.initTile(TileData.getFrozenTileData(i, j));
+                }
                 this.actorLayer.addChild(tile.node);
                 this.map[i][j] = tile;
             }
@@ -122,7 +126,7 @@ export default class GameWorld extends cc.Component {
         let boomList = this.getBoomList([], []);
         for (let i = 0; i < boomList.length; i++) {
             let p = boomList[i];
-            if (!this.isPosObstacle(cc.v2(p.x, p.y))) {
+            if (!this.isOBETile(cc.v2(p.x, p.y))) {
                 this.map[p.x][p.y].initTile(TileData.getRandomTileData(p.x, p.y));
             }
         }
@@ -140,7 +144,7 @@ export default class GameWorld extends cc.Component {
         let indexs2: cc.Vec2[] = new Array();
         for (let i = 0; i < this.map.length; i++) {
             for (let j = 0; j < this.map[0].length; j++) {
-                if (!this.isObstacleOrEmptyType(this.map[i][j].data.tileType)) {
+                if (!this.isOBFTile(cc.v2(i,j))) {
                     indexs1.push(cc.v2(i, j));
                     indexs2.push(cc.v2(i, j));
                 }
@@ -240,7 +244,8 @@ export default class GameWorld extends cc.Component {
     checkMapHasTopObstacle(): boolean {
         for (let i = 0; i < this.map.length; i++) {
             for (let j = 2; j < this.map[0].length; j++) {
-                if (TileData.isTypeObstacleOrBoss(this.map[i][j].data.tileType) || this.map[i][j].data.isBoss) {
+                let data = this.map[i][j].data;
+                if(data.obstacleLevel<999&&(data.isBoss||data.isObstacle)){
                     return true;
                 }
             }
@@ -368,10 +373,10 @@ export default class GameWorld extends cc.Component {
             }
             this.map[p.x][p.y].node.runAction(cc.sequence(
                 cc.callFunc(() => {
-                    if (p.isExtraBoom && !this.isPosObstacle(cc.v2(p.x, p.y))) {
+                    if (p.isExtraBoom && !this.isOBTile(cc.v2(p.x, p.y))) {
                         this.map[p.x][p.y].showBoomEffect();
                     }
-                    if (this.isPosObstacle(cc.v2(p.x, p.y))) {
+                    if (this.isOBTile(cc.v2(p.x, p.y))) {
                         this.map[p.x][p.y].showBoomObstcleEffect();
                     }
                 }),
@@ -393,7 +398,7 @@ export default class GameWorld extends cc.Component {
                         cc.log(p);
                     } else if (this.map[p.x][p.y].data.isBoss && this.boss.enabled) {
                         this.boss.takeDamge(1);
-                    } else if (this.isPosObstacle(cc.v2(p.x, p.y)) && this.map[p.x][p.y].data.obstacleLevel > 0) {
+                    } else if (this.isOBTile(cc.v2(p.x, p.y)) && this.map[p.x][p.y].data.obstacleLevel > 0) {
                         this.map[p.x][p.y].node.opacity = 255;
                         if (this.map[p.x][p.y].data.obstacleLevel < 999) {
                             this.map[p.x][p.y].data.obstacleLevel--;
@@ -419,11 +424,11 @@ export default class GameWorld extends cc.Component {
         }
         for (let i = 0; i < fallList.length; i++) {
             let p = fallList[i];
-            this.switchTileData(cc.v2(p.x, p.y), cc.v2(p.x, p.y - p.z));
+            this.switchTileData(cc.v2(p.fx, p.fy), cc.v2(p.tx, p.ty));
             if (i == fallList.length - 1) {
                 this.canFill = true;
             }
-            this.map[p.x][p.y - p.z].node.runAction(cc.sequence(cc.moveTo(this.speed * p.z, GameWorld.getPosInMap(cc.v2(p.x, p.y - p.z))).easing(cc.easeBackIn()), cc.callFunc(() => {
+            this.map[p.tx][p.ty].node.runAction(cc.sequence(cc.moveTo(this.speed *(p.fy-p.ty), GameWorld.getPosInMap(cc.v2(p.tx, p.ty))).easing(cc.easeBackIn()), cc.callFunc(() => {
             })));
         }
         if (fallList.length < 1) {
@@ -432,7 +437,14 @@ export default class GameWorld extends cc.Component {
     }
     fillTiles() {
         this.canFill = false;
-        let emptyList = this.getEmptyList();
+        let emptyListTemp = this.getEmptyList();
+        let emptyList = [];
+        for(let i = 0; i < emptyListTemp.length; i++){
+            let p = emptyListTemp[i];
+            if(this.isFallEmpty(p)){
+                emptyList.push(p);
+            }
+        }
         let count = 0;
         for (let i = 0; i < emptyList.length; i++) {
             let p = emptyList[i];
@@ -454,6 +466,14 @@ export default class GameWorld extends cc.Component {
             this.boomTiles(boomList);
             this.fillAfter(boomList);
         }
+    }
+    isFallEmpty(pos:cc.Vec2):boolean{
+        for(let j = pos.y;j<this.map[0].length;j++){
+            if(!this.map[pos.x][j].data.isEmpty){
+                return false;
+            }
+        }
+        return true;
     }
     fillAfter(boomList: BoomData[]) {
         if (boomList.length < 1) {
@@ -552,16 +572,16 @@ export default class GameWorld extends cc.Component {
             let pos2 = cc.v2(boomList[i].x - 1, boomList[i].y);
             let pos3 = cc.v2(boomList[i].x, boomList[i].y + 1);
             let pos4 = cc.v2(boomList[i].x, boomList[i].y - 1);
-            if (this.isPosObstacle(pos1) && !this.isPosObstacle(pos0)) {
+            if (GameWorld.isPosIndexValid(pos1) && this.isOBTile(pos1) && !this.isOBTile(pos0)) {
                 obstacleBoomlist.push(new BoomData(pos1.x, pos1.y, false, 0, boomList[i].isExtraBoom, 0));
             }
-            if (this.isPosObstacle(pos2) && !this.isPosObstacle(pos0)) {
+            if (GameWorld.isPosIndexValid(pos2) && this.isOBTile(pos2) && !this.isOBTile(pos0)) {
                 obstacleBoomlist.push(new BoomData(pos2.x, pos2.y, false, 0, boomList[i].isExtraBoom, 0));
             }
-            if (this.isPosObstacle(pos3) && !this.isPosObstacle(pos0)) {
+            if (GameWorld.isPosIndexValid(pos3) && this.isOBTile(pos3) && !this.isOBTile(pos0)) {
                 obstacleBoomlist.push(new BoomData(pos3.x, pos3.y, false, 0, boomList[i].isExtraBoom, 0));
             }
-            if (this.isPosObstacle(pos4) && !this.isPosObstacle(pos0)) {
+            if (GameWorld.isPosIndexValid(pos4) && this.isOBTile(pos4) && !this.isOBTile(pos0)) {
                 obstacleBoomlist.push(new BoomData(pos3.x, pos4.y, false, 0, boomList[i].isExtraBoom, 0));
             }
         }
@@ -587,7 +607,7 @@ export default class GameWorld extends cc.Component {
             let p = boomMap[k];
             if (this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_VERTICAL) {
                 for (let i = 0; i < this.map.length; i++) {
-                    if (!boomMap[`x=${i}y=${p.y}`] && !this.isPosObstacle(cc.v2(i, p.y))) {
+                    if (!boomMap[`x=${i}y=${p.y}`] && !this.isOBTile(cc.v2(i, p.y))) {
                         hasSpecial = true;
                         boomMap[`x=${i}y=${p.y}`] = new BoomData(i, p.y, false, this.map[i][p.y].data.tileSpecial, true, 0);
                     } else if (boomMap[`x=${i}y=${p.y}`]) {
@@ -597,7 +617,7 @@ export default class GameWorld extends cc.Component {
             }
             if (this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_HORIZONTAL) {
                 for (let j = 0; j < this.map[0].length; j++) {
-                    if (!boomMap[`x=${p.x}y=${j}`] && !this.isPosObstacle(cc.v2(p.x, j))) {
+                    if (!boomMap[`x=${p.x}y=${j}`] && !this.isOBTile(cc.v2(p.x, j))) {
                         hasSpecial = true;
                         boomMap[`x=${p.x}y=${j}`] = new BoomData(p.x, j, false, this.map[p.x][j].data.tileSpecial, true, 0);
                     } else if (boomMap[`x=${p.x}y=${j}`]) {
@@ -610,7 +630,7 @@ export default class GameWorld extends cc.Component {
                     , cc.v2(p.x, p.y - 2), cc.v2(p.x, p.y - 1), cc.v2(p.x, p.y + 1), cc.v2(p.x, p.y + 2)
                     , cc.v2(p.x + 1, p.y + 1), cc.v2(p.x + 1, p.y - 1), cc.v2(p.x - 1, p.y + 1), cc.v2(p.x - 1, p.y + 1)]
                 for (let i = 0; i < indexs.length; i++) {
-                    if (!boomMap[`x=${indexs[i].x}y=${indexs[i].y}`] && GameWorld.isPosIndexValid(indexs[i]) && !this.isPosObstacle(indexs[i])) {
+                    if (!boomMap[`x=${indexs[i].x}y=${indexs[i].y}`] && GameWorld.isPosIndexValid(indexs[i]) && !this.isOBTile(indexs[i])) {
                         hasSpecial = true;
                         boomMap[`x=${indexs[i].x}y=${indexs[i].y}`] = new BoomData(indexs[i].x, indexs[i].y, false, this.map[indexs[i].x][indexs[i].y].data.tileSpecial, true, 0);
                     } else if (boomMap[`x=${indexs[i].x}y=${indexs[i].y}`]) {
@@ -621,7 +641,7 @@ export default class GameWorld extends cc.Component {
             if (this.map[p.x][p.y].data.tileSpecial == Tile.SPECIAL_FIVE) {
                 for (let i = 0; i < this.map.length; i++) {
                     for (let j = 0; j < this.map[0].length; j++) {
-                        if (!boomMap[`x=${i}y=${j}`] && !this.isPosObstacle(cc.v2(i, j)) && this.isTypeEqual(cc.v2(p.x, p.y), cc.v2(i, j))) {
+                        if (!boomMap[`x=${i}y=${j}`]&& this.isTypeEqual(cc.v2(p.x, p.y), cc.v2(i, j)) && !this.isOBTile(cc.v2(i, j)) ) {
                             hasSpecial = true;
                             boomMap[`x=${i}y=${j}`] = new BoomData(i, j, false, this.map[i][j].data.tileSpecial, true, 0);
                         } else if (boomMap[`x=${i}y=${j}`]) {
@@ -692,12 +712,15 @@ export default class GameWorld extends cc.Component {
         }
         return boomMap;
     }
-    /**获取可下落方块坐标列表 其中z代表下落格数 */
-    getFallList(): cc.Vec3[] {
-        let fallList: cc.Vec3[] = new Array();
+    /**获取可下落方块坐标列表 
+     * 012345678
+     * 0011#1111
+    */
+    getFallList(): FallData[] {
+        let fallList: FallData[] = new Array();
         for (let i = 0; i < this.map.length; i++) {
-            let count = 0;
-            let countSingle = 0;
+            let count = 0;//累加上来的下落高度
+            let countSingle = 0;//单个方块的空隙高度
             let isSave = false;
             for (let j = 0; j < this.map[0].length; j++) {
                 //由下往上查找是否有空方块，如果有计数+1，继续遍历到空方块继续+1，不是空方块且计数不为0，保存该点，继续寻找下一个
@@ -707,13 +730,17 @@ export default class GameWorld extends cc.Component {
                         countSingle = 0;
                     }
                     countSingle++;
+                }else if(this.map[i][j].data.isFrozen){
+                    count = 0;
+                    countSingle = 0;
+                    isSave = false;
                 } else {
                     if (countSingle > 0) {
                         if (!isSave) {
                             count += countSingle;
                         }
                         isSave = true;
-                        fallList.push(cc.v3(i, j, count));
+                        fallList.push(new FallData(i, j, i,j-count));
                     }
                 }
             }
@@ -753,29 +780,35 @@ export default class GameWorld extends cc.Component {
     isTypeEqual(pos1: cc.Vec2, pos2: cc.Vec2): boolean {
         if (!GameWorld.isPosIndexValid(pos1)) { return false; }
         if (!GameWorld.isPosIndexValid(pos2)) { return false; }
-
-        if (this.isObstacleOrEmptyType(this.map[pos1.x][pos1.y].data.tileType) || this.isObstacleOrEmptyType(this.map[pos2.x][pos2.y].data.tileType)) {
+        if (this.isOBETile(pos1) || this.isOBETile(pos2)) {
             return false;
         }
         return this.map[pos1.x][pos1.y].data.tileType == this.map[pos2.x][pos2.y].data.tileType;
     }
-
-    private isObstacleOrEmptyType(tileType: string): boolean {
-        if (tileType == TileData.EMPTY || TileData.isTypeObstacleOrBoss(tileType)) {
+    /**是否是障碍或者boss */
+    private isOBTile(pos:cc.Vec2):boolean{
+        let data = this.map[pos.x][pos.y].data;
+        if(data.isBoss||data.isObstacle){
             return true;
         }
         return false;
     }
-    private isPosObstacle(pos: cc.Vec2): boolean {
-        if (GameWorld.isPosIndexValid(pos)) {
-            if (TileData.isTypeObstacleOrBoss(this.map[pos.x][pos.y].data.tileType)) {
-                return true;
-            }
+    /**是否是冻结障碍或者boss */
+    private isOBFTile(pos:cc.Vec2):boolean{
+        let data = this.map[pos.x][pos.y].data;
+        if(data.isBoss||data.isObstacle||data.isFrozen){
+            return true;
         }
-
         return false;
     }
-
+    /**是否是空、障碍或者boss */
+    private isOBETile(pos:cc.Vec2):boolean{
+        let data = this.map[pos.x][pos.y].data;
+        if(data.isBoss||data.isObstacle||data.isEmpty){
+            return true;
+        }
+        return false;
+    }
 
     isTimeDelay(dt: number): boolean {
         this.timeDelay += dt;

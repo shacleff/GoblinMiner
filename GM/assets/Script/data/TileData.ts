@@ -18,7 +18,8 @@ export default class TileData{
     isObstacle = false;//是否是障碍，本身类型不为障碍而是普通元素的话，显示为冰块
     obstacleLevel = 0;//障碍等级，决定障碍需要几次才能消除，只有为0的时候才能消除,该单位大于999的话代表不可消除
     isBoss = false;//是否是头目障碍,头目出现的情况下无法正常清除，被爆炸的情况下会对头目造成伤害
-    constructor(tileType:string,pos:cc.Vec2,resName:string,isEmpty:boolean,isObstacle:boolean,obstacleLevel:number,isBoss:boolean){
+    isFrozen = false;//是否冻结，冻结的方块无法下落
+    constructor(tileType:string,pos:cc.Vec2,resName:string,isEmpty:boolean,isObstacle:boolean,obstacleLevel:number,isBoss:boolean,isFrozen:boolean){
         this.tileType = tileType;
         this.posIndex = pos;
         this.resName = resName;
@@ -26,6 +27,7 @@ export default class TileData{
         this.isObstacle = isObstacle;
         this.obstacleLevel = obstacleLevel;
         this.isBoss = isBoss;
+        this.isFrozen = isFrozen;
     }
     valueCopy(data:TileData){
         this.posIndex = cc.v2(data.posIndex.x,data.posIndex.y);
@@ -39,31 +41,30 @@ export default class TileData{
         this.isObstacle = data.isObstacle;
         this.obstacleLevel = data.obstacleLevel?data.obstacleLevel:0;
         this.isBoss = data.isBoss;
+        this.isFrozen = data.isFrozen;
     }
     clone():TileData{
-        return new TileData(this.tileType,this.posIndex.clone(),this.resName,this.isEmpty,this.isObstacle,this.obstacleLevel,this.isBoss); 
+        return new TileData(this.tileType,this.posIndex.clone(),this.resName,this.isEmpty,this.isObstacle,this.obstacleLevel,this.isBoss,this.isFrozen); 
     }
     static getEmptyTileData(x:number,y:number):TileData{
-        return new TileData(TileData.EMPTY,cc.v2(x,y),TileData.EMPTY,true,false,0,false);
+        return new TileData(TileData.EMPTY,cc.v2(x,y),TileData.EMPTY,true,false,0,false,false);
     }
     
     static getRandomTileData(x:number,y:number):TileData{
         let ran = Random.getRandomNum(1, 6);
         let tt = 'tile00' + ran;
-        return new TileData(tt, cc.v2(x, y), tt,false,false,0,false);
+        return new TileData(tt, cc.v2(x, y), tt,false,false,0,false,false);
     }
     static getObstacleTileData(x:number,y:number,level:number):TileData{
         let tt = 'obstacle000';
-        return new TileData(tt, cc.v2(x, y), tt,false,true,level,false);
+        return new TileData(tt, cc.v2(x, y), tt,false,true,level,false,false);
     }
     static getBossTileData(x:number,y:number,level:number):TileData{
         let tt = 'boss000';
-        return new TileData(tt, cc.v2(x, y), tt,false,true,0,true);
+        return new TileData(tt, cc.v2(x, y), tt,false,true,0,true,false);
     }
-    static isTypeObstacleOrBoss(tileType: string): boolean {
-        if (tileType.indexOf('obstacle') > -1 || tileType.indexOf('boss') > -1) {
-            return true;
-        }
-        return false;
+    static getFrozenTileData(x:number,y:number):TileData{
+        let tt = 'obstacle001level1';
+        return new TileData(tt, cc.v2(x, y), tt,false,true,999,false,true);
     }
 }

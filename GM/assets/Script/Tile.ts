@@ -115,7 +115,7 @@ export default class Tile extends cc.Component {
         if (this.data.isObstacle && this.data.obstacleLevel > 0) {
             suffix = 'level' + this.data.obstacleLevel;
         }
-        this.sprite.spriteFrame = Logic.spriteFrames[this.data.resName + suffix];
+        this.sprite.spriteFrame = Logic.spriteFrames[this.data.resName + suffix]?Logic.spriteFrames[this.data.resName + suffix]:Logic.spriteFrames[this.data.resName];
         this.sprite.node.color = this.data.isBoss ? cc.Color.BLACK : cc.Color.WHITE;
     }
     start() {
