@@ -24,6 +24,7 @@ export default class Tile extends cc.Component {
     glow: cc.Node;
     effectboom: cc.Node;
     effectobstcleboom: cc.Node;
+    mat: cc.MaterialVariant;
     static readonly SPECIAL_NORMAL = 0;
     static readonly SPECIAL_VERTICAL = 1;
     static readonly SPECIAL_HORIZONTAL = 2;
@@ -46,7 +47,7 @@ export default class Tile extends cc.Component {
         }, this);
         this.node.on(cc.Node.EventType.TOUCH_END, (event: cc.Event.EventTouch) => {
             this.glow.opacity = 0;
-            
+
             if (Logic.isUseSkillChoose) {
                 cc.director.emit(EventConstant.USE_SKILL, { detail: { tapPos: this.data.posIndex } });
             }
@@ -78,7 +79,7 @@ export default class Tile extends cc.Component {
     initTile(data: TileData) {
         this.data = data;
         this.changeRes();
-        this.node.position = GameWorld.getPosInMap(data.posIndex);
+        this.node.setPosition(GameWorld.getPosInMap(data.posIndex));
     }
     showBoomEffect() {
         this.effectboom.active = true;
@@ -90,13 +91,13 @@ export default class Tile extends cc.Component {
     }
     updateTile() {
         this.changeRes();
-        this.node.position = GameWorld.getPosInMap(this.data.posIndex);
+        this.node.setPosition(GameWorld.getPosInMap(this.data.posIndex));
     }
     updateTilePosition(isAnim: boolean, callback: Function) {
         if (isAnim) {
             this.node.runAction(cc.sequence(cc.moveTo(0.2, GameWorld.getPosInMap(this.data.posIndex)), cc.callFunc(callback)));
         } else {
-            this.node.position = GameWorld.getPosInMap(this.data.posIndex);
+            this.node.setPosition(GameWorld.getPosInMap(this.data.posIndex));
             callback();
         }
     }
@@ -115,8 +116,19 @@ export default class Tile extends cc.Component {
         if (this.data.isObstacle && this.data.obstacleLevel > 0) {
             suffix = 'level' + this.data.obstacleLevel;
         }
-        this.sprite.spriteFrame = Logic.spriteFrames[this.data.resName + suffix]?Logic.spriteFrames[this.data.resName + suffix]:Logic.spriteFrames[this.data.resName];
+        let spriteFrame = Logic.spriteFrames[this.data.resName + suffix] ? Logic.spriteFrames[this.data.resName + suffix] : Logic.spriteFrames[this.data.resName];
+        this.sprite.spriteFrame = spriteFrame;
+        this.sprite.node.width = spriteFrame.getRect().width;
+        this.sprite.node.height = spriteFrame.getRect().height;
         this.sprite.node.color = this.data.isBoss ? cc.Color.BLACK : cc.Color.WHITE;
+        this.scheduleOnce(()=>{
+            this.mat = this.sprite.getComponent(cc.Sprite).getMaterial(0);
+            this.mat.setProperty('textureSizeWidth', spriteFrame.getTexture().width * this.sprite.node.scaleX);
+            this.mat.setProperty('textureSizeHeight', spriteFrame.getTexture().height * this.sprite.node.scaleY);
+            this.mat.setProperty('outlineColor', cc.color(200,200,200));
+            this.mat.setProperty('openOutline', this.data.isBoss||this.data.isEmpty||this.data.isObstacle||this.data.isFrozen?0:1);
+        },0.02);
+        
     }
     start() {
 

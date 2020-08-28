@@ -77,7 +77,7 @@ export default class Loading extends cc.Component {
             this.isSpriteFramesLoaded = false;
             cc.director.preloadScene('game',()=>{},()=>{
                 this.ui.runAction(cc.fadeOut(1));
-                this.scheduleOnce(()=>{cc.director.loadScene('game');},1);
+                this.scheduleOnce(()=>{cc.director.loadScene('game');},0.3);
             })
         }
 

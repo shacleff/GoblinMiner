@@ -81,7 +81,7 @@ export default class GameWorld extends cc.Component {
                     }
                 }
                 if(j==7&&i>2&&i<6){
-                    tile.initTile(TileData.getFrozenTileData(i, j));
+                    // tile.initTile(TileData.getFrozenTileData(i, j));
                 }
                 this.actorLayer.addChild(tile.node);
                 this.map[i][j] = tile;
@@ -723,7 +723,8 @@ export default class GameWorld extends cc.Component {
             let countSingle = 0;//单个方块的空隙高度
             let isSave = false;
             for (let j = 0; j < this.map[0].length; j++) {
-                //由下往上查找是否有空方块，如果有计数+1，继续遍历到空方块继续+1，不是空方块且计数不为0，保存该点，继续寻找下一个
+                //由下往上查找是否有空方块，如果有计数+1，继续查找直到不是空方块且计数不为0，保存该点，继续寻找下一个
+                //如果遇到冻结方块计数清零
                 if (this.map[i][j].data.isEmpty) {
                     if (isSave) {
                         isSave = false;

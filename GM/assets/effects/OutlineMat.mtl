@@ -1,0 +1,22 @@
+{
+  "__type__": "cc.Material",
+  "_name": "OutlineMat",
+  "_objFlags": 0,
+  "_native": "",
+  "_effectAsset": {
+    "__uuid__": "bc2bbf7b-df1b-4e58-81de-4af818e6eef2"
+  },
+  "_techniqueIndex": 0,
+  "_techniqueData": {
+    "0": {
+      "props": {
+        "outlineSize": 2,
+        "textureSizeWidth": 96,
+        "textureSizeHeight": 96
+      },
+      "defines": {
+        "USE_TEXTURE": true
+      }
+    }
+  }
+}

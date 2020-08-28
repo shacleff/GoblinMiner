@@ -69,7 +69,7 @@ export default class Boss extends cc.Component {
         cc.director.emit(EventConstant.HUD_UPDATE_HEATH_BAR, { detail: { health: this.data.health } });
     }
     hideBoss(){
-       this.node.position = GameWorld.getPosInMap(cc.v2(this.data.posIndex.x,this.data.posIndex.y-8));
+       this.node.setPosition(GameWorld.getPosInMap(cc.v2(this.data.posIndex.x,this.data.posIndex.y-8)));
     }
     showAttackAnim(){
         if(!this.anim){
@@ -78,7 +78,7 @@ export default class Boss extends cc.Component {
         this.anim.play('BossAttack');
     }
     showBoss(){
-        this.node.position = GameWorld.getPosInMap(this.data.posIndex);
+        this.node.setPosition(GameWorld.getPosInMap(this.data.posIndex));
         this.node.zIndex = 3000;
         this.changeRes();
         this.scheduleOnce(()=>{
