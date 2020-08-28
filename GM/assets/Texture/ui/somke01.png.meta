@@ -1,5 +1,5 @@
 {
-  "ver": "2.3.3",
+  "ver": "2.3.5",
   "uuid": "fa7820f8-28be-4ef1-afcc-7a92e3573fbd",
   "type": "sprite",
   "wrapMode": "clamp",
@@ -7,6 +7,8 @@
   "premultiplyAlpha": false,
   "genMipmaps": false,
   "packable": true,
+  "width": 13,
+  "height": 13,
   "platformSettings": {},
   "subMetas": {
     "somke01": {

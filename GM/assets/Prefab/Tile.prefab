@@ -62,7 +62,7 @@
     },
     "_trs": {
       "__type__": "TypedArray",
-      "ctor": "Float32Array",
+      "ctor": "Float64Array",
       "array": [
         0,
         0,
@@ -126,7 +126,7 @@
     },
     "_trs": {
       "__type__": "TypedArray",
-      "ctor": "Float32Array",
+      "ctor": "Float64Array",
       "array": [
         0,
         0,
@@ -233,7 +233,7 @@
     },
     "_trs": {
       "__type__": "TypedArray",
-      "ctor": "Float32Array",
+      "ctor": "Float64Array",
       "array": [
         0,
         0,
@@ -311,7 +311,7 @@
       "__id__": 1
     },
     "_children": [],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 9
@@ -340,7 +340,7 @@
     },
     "_trs": {
       "__type__": "TypedArray",
-      "ctor": "Float32Array",
+      "ctor": "Float64Array",
       "array": [
         0,
         0,
@@ -386,7 +386,9 @@
     "_file": {
       "__uuid__": "14fc3063-c4a1-47d6-8d42-06c66e0245d8"
     },
-    "_spriteFrame": null,
+    "_spriteFrame": {
+      "__uuid__": "5030dd93-a66d-4371-8f92-be1932f75bf1"
+    },
     "_texture": null,
     "_stopped": false,
     "playOnLoad": true,
@@ -516,7 +518,7 @@
     },
     "_trs": {
       "__type__": "TypedArray",
-      "ctor": "Float32Array",
+      "ctor": "Float64Array",
       "array": [
         0,
         0,
@@ -567,9 +569,9 @@
     "_stopped": false,
     "playOnLoad": true,
     "autoRemoveOnFinish": false,
-    "totalParticles": 300,
+    "totalParticles": 60,
     "duration": -1,
-    "emissionRate": 150,
+    "emissionRate": 30,
     "life": 0.5,
     "lifeVar": 0.5,
     "_startColor": {
@@ -602,8 +604,8 @@
     },
     "angle": 120,
     "angleVar": 180,
-    "startSize": 90,
-    "startSizeVar": 10,
+    "startSize": 20,
+    "startSizeVar": 5,
     "endSize": -1,
     "endSizeVar": 0,
     "startSpin": 0,
@@ -617,8 +619,8 @@
     },
     "posVar": {
       "__type__": "cc.Vec2",
-      "x": 80,
-      "y": 300
+      "x": 10,
+      "y": 60
     },
     "_positionType": 1,
     "positionType": 1,
@@ -626,9 +628,9 @@
     "gravity": {
       "__type__": "cc.Vec2",
       "x": 0,
-      "y": -1200
+      "y": -400
     },
-    "speed": 540,
+    "speed": 120,
     "speedVar": 0,
     "tangentialAccel": 0,
     "tangentialAccelVar": 0,

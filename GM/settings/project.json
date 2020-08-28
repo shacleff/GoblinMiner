@@ -13,7 +13,11 @@
   "design-resolution-width": 720,
   "excluded-modules": [
     "VideoPlayer",
-    "WebView"
+    "WebView",
+    "3D Physics/cannon.js",
+    "3D Physics/Builtin",
+    "3D Particle",
+    "SafeArea"
   ],
   "facebook": {
     "appID": "",
@@ -39,5 +43,8 @@
   },
   "start-scene": "5d22ba52-2e22-4ab2-a0f0-41888d4e594d",
   "use-customize-simulator": true,
-  "use-project-simulator-setting": false
+  "use-project-simulator-setting": false,
+  "migrate-history": [
+    "cloud-function"
+  ]
 }
