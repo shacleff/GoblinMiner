@@ -17,7 +17,9 @@ CCEffect %{
         openOutline: {value: 0}
         textureSizeWidth: {value: 1}
         textureSizeHeight: {value: 1}
-        outlineColor: {value: [0,0,0,0], inspector: { type: color } }
+        outlineColor: {value: [0.0,0.0,0.0,0.0], inspector: { type: color } }
+        addColor: { value: [0.0, 0.0, 0.0, 0.0], inspector: { type: color } }
+        mulColor: { value: [255.0, 255.0, 255.0, 255.0], inspector: { type: color } }
 }%
 
 
@@ -74,6 +76,8 @@ CCProgram fs %{
     float textureSizeWidth;
     float textureSizeHeight;
     float openOutline;
+    vec4 addColor;
+    vec4 mulColor;
   };
   // 判断在这个角度上距离为outlineSize那一点是不是透明
   int getIsStrokeWithAngel(float angel)
@@ -93,6 +97,8 @@ CCProgram fs %{
   }
   void main () {
     vec4 curr_color = texture2D(texture, v_uv0); // 正在处理的这个像素点的颜色
+    curr_color.rgb = curr_color.rgb + addColor.rgb;
+    curr_color.rgb = curr_color.rgb * mulColor.rgb;
     if (curr_color.a < 0.5||openOutline < 0.9) // 关闭或者透明，不管，直接返回
     {
         gl_FragColor = v_color*curr_color;

@@ -45,7 +45,7 @@ export default class Boss extends cc.Component {
         }
         this.isHurt = false;
         this.isDied = false;
-        this.data = new BossData(0,'boss000',cc.v2(4,1),3,3,cc.v2(health,health));
+        this.data = new BossData(0,`boss00${Logic.currentLevel}`,cc.v2(4,1),3,3,cc.v2(health,health));
         this.showBoss();
     }
     takeDamge(damage:number){
@@ -141,7 +141,7 @@ export default class Boss extends cc.Component {
                 if(arr.length>1){
                     arr.splice(rand,1);
                 }
-                this.gameWorld.map[pos.x][pos.y].initTile(TileData.getObstacleTileData(pos.x, pos.y, Random.getRandomNum(0,obstacleLevel)));
+                this.gameWorld.map[pos.x][pos.y].initTile(TileData.getObstacleTileData(pos.x, pos.y, Random.getRandomNum(0,obstacleLevel),0));
             }
         }
     }

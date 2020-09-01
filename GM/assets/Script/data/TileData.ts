@@ -56,14 +56,14 @@ export default class TileData{
         return new TileData(TileData.EMPTY,cc.v2(x,y),TileData.EMPTY,true,false,0,false,0,false);
     }
     
-    static getRandomTileData(x:number,y:number):TileData{
+    static getRandomTileData(x:number,y:number,frozenLevel:number):TileData{
         let ran = Random.getRandomNum(1, 6);
         let tt = 'tile00' + ran;
-        return new TileData(tt, cc.v2(x, y), tt,false,false,0,false,0,false);
+        return new TileData(tt, cc.v2(x, y), tt,false,false,0,frozenLevel>0,frozenLevel,false);
     }
-    static getObstacleTileData(x:number,y:number,level:number):TileData{
+    static getObstacleTileData(x:number,y:number,obstacleLevel:number,frozenLevel:number):TileData{
         let tt = 'obstacle000';
-        return new TileData(tt, cc.v2(x, y), tt,false,true,level,false,0,false);
+        return new TileData(tt, cc.v2(x, y), tt,false,true,obstacleLevel,frozenLevel>0,frozenLevel,false);
     }
     static getBossTileData(x:number,y:number):TileData{
         let tt = 'boss000';

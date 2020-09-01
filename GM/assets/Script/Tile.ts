@@ -22,6 +22,7 @@ export default class Tile extends cc.Component {
     data: TileData;
     sprite: cc.Sprite;
     glow: cc.Node;
+    frame:cc.Sprite;
     effectboom: cc.Node;
     effectobstcleboom: cc.Node;
     mat: cc.MaterialVariant;
@@ -34,6 +35,7 @@ export default class Tile extends cc.Component {
 
     onLoad() {
         this.sprite = this.node.getChildByName('sprite').getComponent(cc.Sprite);
+        this.frame = this.node.getChildByName('frame').getComponent(cc.Sprite);
         this.glow = this.node.getChildByName('glow');
         this.effectboom = this.node.getChildByName('effectboom');
         this.effectobstcleboom = this.node.getChildByName('effectobstacleboom');
@@ -125,9 +127,13 @@ export default class Tile extends cc.Component {
             this.mat = this.sprite.getComponent(cc.Sprite).getMaterial(0);
             this.mat.setProperty('textureSizeWidth', spriteFrame.getTexture().width * this.sprite.node.scaleX);
             this.mat.setProperty('textureSizeHeight', spriteFrame.getTexture().height * this.sprite.node.scaleY);
-            this.mat.setProperty('outlineColor', cc.color(200,200,200));
+            this.mat.setProperty('outlineColor', cc.color(0,0,0));
             this.mat.setProperty('openOutline', this.data.isBoss||this.data.isEmpty||this.data.isObstacle||this.data.isFrozen?0:1);
-        },0.02);
+            this.mat.setProperty('addColor', this.data.isFrozen ? cc.color(60, 60, 60) : cc.Color.TRANSPARENT);
+            // this.mat.setProperty('mulColor', this.data.isFrozen&&!this.data.isObstacle ? cc.color(100, 100, 120) : cc.Color.WHITE);
+            this.frame.spriteFrame = this.data.isFrozen?Logic.spriteFrames[`tileframefrozen00${this.data.frozenLevel}`]:null;
+
+        },0.01);
         
     }
     start() {

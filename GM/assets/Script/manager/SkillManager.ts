@@ -56,8 +56,7 @@ export default class SkillManager {
     private pickTile(tapPos: cc.Vec2):boolean{
         let blist: BoomData[] = [];
         if (GameWorld.isPosIndexValid(tapPos)
-        &&!this.gameWorld.map[tapPos.x][tapPos.y].data.isEmpty
-        &&!this.gameWorld.map[tapPos.x][tapPos.y].data.isFrozen) {
+        &&!this.gameWorld.map[tapPos.x][tapPos.y].data.isEmpty) {
             blist.push(new BoomData(tapPos.x, tapPos.y, false, this.gameWorld.map[tapPos.x][tapPos.y].data.tileSpecial, true,1));
         }
         if (blist.length > 0) {

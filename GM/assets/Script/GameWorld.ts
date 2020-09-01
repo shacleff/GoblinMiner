@@ -73,15 +73,20 @@ export default class GameWorld extends cc.Component {
             this.map[i] = new Array();
             for (let j = 0; j < GameWorld.HEIGHT_SIZE; j++) {
                 let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
-                tile.initTile(TileData.getRandomTileData(i, j));
+                tile.initTile(TileData.getRandomTileData(i, j,0));
                 if (j < GameWorld.OBSTACLE_HEIGHT) {
-                    tile.initTile(TileData.getObstacleTileData(i, j, Random.getRandomNum(0, 1)));
+                    tile.initTile(TileData.getObstacleTileData(i, j, Random.getRandomNum(0, 1),0));
                     if (i > 2 && i < 6 && Logic.needBoss() && j < GameWorld.OBSTACLE_HEIGHT - 1) {
                         tile.initTile(TileData.getBossTileData(i, j));
                     }
                 }
-                if(j==7&&i>2&&i<6){
-                    // tile.initTile(TileData.getFrozenTileData(i, j));
+                if(j==7){
+                    if(i>2&&i<6){
+                        tile.initTile(TileData.getRandomTileData(i, j,1));
+                    }
+                    if(i == 6){
+                        tile.initTile(TileData.getObstacleTileData(i, j,1,3));
+                    }
                 }
                 this.actorLayer.addChild(tile.node);
                 this.map[i][j] = tile;
@@ -92,7 +97,7 @@ export default class GameWorld extends cc.Component {
             this.obstacleMap[i] = new Array();
             for (let j = 0; j < GameWorld.OBSTACLE_HEIGHT; j++) {
                 let tile = cc.instantiate(this.tilePrefab).getComponent(Tile);
-                tile.initTile(TileData.getObstacleTileData(i, j - GameWorld.OBSTACLE_HEIGHT, Random.getRandomNum(0, 1)));
+                tile.initTile(TileData.getObstacleTileData(i, j - GameWorld.OBSTACLE_HEIGHT, Random.getRandomNum(0, 1),0));
                 tile.node.opacity = 0;
                 this.actorLayer.addChild(tile.node);
                 this.obstacleMap[i][j] = tile;
@@ -127,7 +132,7 @@ export default class GameWorld extends cc.Component {
         for (let i = 0; i < boomList.length; i++) {
             let p = boomList[i];
             if (!this.isOBETile(cc.v2(p.x, p.y))) {
-                this.map[p.x][p.y].initTile(TileData.getRandomTileData(p.x, p.y));
+                this.map[p.x][p.y].initTile(TileData.getRandomTileData(p.x, p.y,0));
             }
         }
         if (boomList.length > 0) {
@@ -222,7 +227,7 @@ export default class GameWorld extends cc.Component {
                     let temp = this.obstacleMap[i][j];
                     this.obstacleMap[i][j] = this.map[i][j];
                     this.map[i][j] = temp;
-                    this.obstacleMap[i][j].initTile(TileData.getObstacleTileData(i, j - GameWorld.OBSTACLE_HEIGHT, Random.getRandomNum(0, 1)));
+                    this.obstacleMap[i][j].initTile(TileData.getObstacleTileData(i, j - GameWorld.OBSTACLE_HEIGHT, Random.getRandomNum(0, 1),0));
                     if (i > 2 && i < 6 && Logic.needBoss() && j < this.obstacleMap[0].length - 1) {
                         this.map[i][j].initTile(TileData.getBossTileData(i, j));
                     }
@@ -296,6 +301,15 @@ export default class GameWorld extends cc.Component {
             return;
         }
         if (this.map[targetPos.x][targetPos.y].data.isObstacle) {
+            return;
+        }
+        if (this.map[targetPos.x][targetPos.y].data.isFrozen) {
+            return;
+        }
+        if (this.map[tapPos.x][tapPos.y].data.isObstacle) {
+            return;
+        }
+        if (this.map[tapPos.x][tapPos.y].data.isFrozen) {
             return;
         }
         if (this.canFall || this.canFill) {
@@ -391,22 +405,29 @@ export default class GameWorld extends cc.Component {
                 , cc.moveBy(speed / 2, -offset, 0)
                 , cc.fadeOut(speed)
                 , cc.callFunc(() => {
+                    let tile = this.map[p.x][p.y];
                     if (p.tileSpecial > 0 && p.isCenter) {
-                        this.map[p.x][p.y].data.tileSpecial = p.tileSpecial;
-                        this.map[p.x][p.y].node.opacity = 255;
-                        this.map[p.x][p.y].updateTile();
+                        tile.data.tileSpecial = p.tileSpecial;
+                        tile.node.opacity = 255;
+                        tile.updateTile();
                         cc.log(p);
-                    } else if (this.map[p.x][p.y].data.isBoss && this.boss.enabled) {
+                    } else if (tile.data.isBoss && this.boss.enabled) {
                         this.boss.takeDamge(1);
-                    } else if (this.isOBTile(cc.v2(p.x, p.y)) && this.map[p.x][p.y].data.obstacleLevel > 0) {
-                        this.map[p.x][p.y].node.opacity = 255;
-                        if (this.map[p.x][p.y].data.obstacleLevel < 999) {
-                            this.map[p.x][p.y].data.obstacleLevel--;
+                    } else if (this.isOBFTile(cc.v2(p.x, p.y)) && (tile.data.obstacleLevel > 0||tile.data.frozenLevel > 0)) {
+                        tile.node.opacity = 255;
+                        if (!tile.data.isFrozen&&tile.data.obstacleLevel>0&&tile.data.obstacleLevel < 999) {
+                            tile.data.obstacleLevel--;
                         }
-                        this.map[p.x][p.y].updateTile();
+                        if (tile.data.frozenLevel>0&&tile.data.frozenLevel < 999) {
+                            tile.data.frozenLevel--;
+                            if(tile.data.frozenLevel<1){
+                                tile.data.isFrozen = false;
+                            }
+                        }
+                        tile.updateTile();
                     } else {
-                        this.map[p.x][p.y].node.opacity = 0;
-                        this.map[p.x][p.y].data = TileData.getEmptyTileData(p.x, p.y);
+                        tile.node.opacity = 0;
+                        tile.data = TileData.getEmptyTileData(p.x, p.y);
                     }
                     count++;
                     if (count >= boomList.length) {
@@ -473,7 +494,7 @@ export default class GameWorld extends cc.Component {
 
                 }
             })));
-            this.map[p.x][p.y].initTile(TileData.getRandomTileData(p.x, p.y));
+            this.map[p.x][p.y].initTile(TileData.getRandomTileData(p.x, p.y,0));
         }
         if (emptyList.length < 1) {
             if(needFallAgain){
