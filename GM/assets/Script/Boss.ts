@@ -45,6 +45,10 @@ export default class Boss extends cc.Component {
         }
         this.isHurt = false;
         this.isDied = false;
+        let res = `boss00${Logic.currentLevel}`;
+        if(Logic.currentLevel>1){
+            res = 'boss000'
+        }
         this.data = new BossData(0,`boss00${Logic.currentLevel}`,cc.v2(4,1),3,3,cc.v2(health,health));
         this.showBoss();
     }
@@ -140,6 +144,10 @@ export default class Boss extends cc.Component {
                 let pos = arr[rand];
                 if(arr.length>1){
                     arr.splice(rand,1);
+                }
+                let fronzenlevel = Logic.currentLevel;
+                if(fronzenlevel>3){
+                    fronzenlevel = 3;
                 }
                 this.gameWorld.map[pos.x][pos.y].initTile(TileData.getObstacleTileData(pos.x, pos.y, Random.getRandomNum(0,obstacleLevel),0));
             }

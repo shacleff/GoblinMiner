@@ -80,14 +80,14 @@ export default class GameWorld extends cc.Component {
                         tile.initTile(TileData.getBossTileData(i, j));
                     }
                 }
-                if(j==7){
-                    if(i>2&&i<6){
-                        tile.initTile(TileData.getRandomTileData(i, j,1));
-                    }
-                    if(i == 6){
-                        tile.initTile(TileData.getObstacleTileData(i, j,1,3));
-                    }
-                }
+                // if(j==7){
+                //     if(i>2&&i<6){
+                //         tile.initTile(TileData.getRandomTileData(i, j,1));
+                //     }
+                //     if(i == 6){
+                //         tile.initTile(TileData.getObstacleTileData(i, j,1,3));
+                //     }
+                // }
                 this.actorLayer.addChild(tile.node);
                 this.map[i][j] = tile;
             }
