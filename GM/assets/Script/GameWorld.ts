@@ -77,7 +77,7 @@ export default class GameWorld extends cc.Component {
                 if (j < GameWorld.OBSTACLE_HEIGHT) {
                     tile.initTile(TileData.getObstacleTileData(i, j, Random.getRandomNum(0, 1)));
                     if (i > 2 && i < 6 && Logic.needBoss() && j < GameWorld.OBSTACLE_HEIGHT - 1) {
-                        tile.initTile(TileData.getBossTileData(i, j, 1));
+                        tile.initTile(TileData.getBossTileData(i, j));
                     }
                 }
                 if(j==7&&i>2&&i<6){
@@ -224,7 +224,7 @@ export default class GameWorld extends cc.Component {
                     this.map[i][j] = temp;
                     this.obstacleMap[i][j].initTile(TileData.getObstacleTileData(i, j - GameWorld.OBSTACLE_HEIGHT, Random.getRandomNum(0, 1)));
                     if (i > 2 && i < 6 && Logic.needBoss() && j < this.obstacleMap[0].length - 1) {
-                        this.map[i][j].initTile(TileData.getBossTileData(i, j, 1));
+                        this.map[i][j].initTile(TileData.getBossTileData(i, j));
                     }
                     this.obstacleMap[i][j].node.opacity = 0;
                 }
@@ -425,11 +425,18 @@ export default class GameWorld extends cc.Component {
         for (let i = 0; i < fallList.length; i++) {
             let p = fallList[i];
             this.switchTileData(cc.v2(p.fx, p.fy), cc.v2(p.tx, p.ty));
+            for(let j = i+1;j<fallList.length;j++){
+                if(fallList[j].fx==p.tx&&fallList[j].fy==p.ty){
+                    fallList[j].fx = p.fx;
+                    fallList[j].fy = p.fy;
+                }
+            }
+            let pos = GameWorld.getPosInMap(cc.v2(p.tx,p.ty));
+            this.map[p.tx][p.ty].node.runAction(cc.sequence(cc.moveTo(this.speed *(p.fy-p.ty), pos).easing(cc.easeBackIn()), cc.callFunc(() => {
+            })));
             if (i == fallList.length - 1) {
                 this.canFill = true;
             }
-            this.map[p.tx][p.ty].node.runAction(cc.sequence(cc.moveTo(this.speed *(p.fy-p.ty), GameWorld.getPosInMap(cc.v2(p.tx, p.ty))).easing(cc.easeBackIn()), cc.callFunc(() => {
-            })));
         }
         if (fallList.length < 1) {
             this.canFill = true;
@@ -439,10 +446,17 @@ export default class GameWorld extends cc.Component {
         this.canFill = false;
         let emptyListTemp = this.getEmptyList();
         let emptyList = [];
+        let needFallAgain = false;
         for(let i = 0; i < emptyListTemp.length; i++){
             let p = emptyListTemp[i];
             if(this.isFallEmpty(p)){
                 emptyList.push(p);
+            }else if(p.y<this.map[0].length-1&&this.map[p.x][p.y+1].data.isFrozen){
+                let leftFrozen = p.x>0&&this.map[p.x-1][p.y+1].data.isFrozen;
+                let rightFrozen = p.x<this.map.length-1&&this.map[p.x+1][p.y+1].data.isFrozen;
+                if(!leftFrozen&&!rightFrozen){
+                    needFallAgain = true;
+                }
             }
         }
         let count = 0;
@@ -451,22 +465,32 @@ export default class GameWorld extends cc.Component {
             this.map[p.x][p.y].node.runAction(cc.sequence(cc.delayTime(this.speed * p.y / 10), cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE * 2))), cc.fadeIn(this.speed), cc.moveTo(this.speed * (1 + p.y / 2), GameWorld.getPosInMap(cc.v2(p.x, p.y))).easing(cc.easeBackIn()), cc.callFunc(() => {
                 count++;
                 if (count == emptyList.length) {
-                    let boomList = this.getBoomList([], []);
-                    this.boomList = boomList;
-                    this.boomTiles(boomList);
-                    this.fillAfter(boomList);
+                    // let boomList = this.getBoomList([], []);
+                    // this.boomList = boomList;
+                    // this.boomTiles(boomList);
+                    // this.fillAfter(boomList);
+                    this.canFall = true;
 
                 }
             })));
             this.map[p.x][p.y].initTile(TileData.getRandomTileData(p.x, p.y));
         }
         if (emptyList.length < 1) {
-            let boomList = this.getBoomList([], []);
-            this.boomList = boomList;
-            this.boomTiles(boomList);
-            this.fillAfter(boomList);
+            if(needFallAgain){
+                this.canFall = true;
+            }else{
+                let boomList = this.getBoomList([], []);
+                this.boomList = boomList;
+                this.boomTiles(boomList);
+                this.fillAfter(boomList);
+            }
+            
         }
     }
+    /**
+     * 
+     * @param pos 判断顶部有没有遮挡
+     */
     isFallEmpty(pos:cc.Vec2):boolean{
         for(let j = pos.y;j<this.map[0].length;j++){
             if(!this.map[pos.x][j].data.isEmpty){
@@ -718,35 +742,75 @@ export default class GameWorld extends cc.Component {
     */
     getFallList(): FallData[] {
         let fallList: FallData[] = new Array();
-        for (let i = 0; i < this.map.length; i++) {
-            let count = 0;//累加上来的下落高度
-            let countSingle = 0;//单个方块的空隙高度
-            let isSave = false;
-            for (let j = 0; j < this.map[0].length; j++) {
-                //由下往上查找是否有空方块，如果有计数+1，继续查找直到不是空方块且计数不为0，保存该点，继续寻找下一个
-                //如果遇到冻结方块计数清零
-                if (this.map[i][j].data.isEmpty) {
-                    if (isSave) {
-                        isSave = false;
-                        countSingle = 0;
-                    }
-                    countSingle++;
-                }else if(this.map[i][j].data.isFrozen){
-                    count = 0;
-                    countSingle = 0;
-                    isSave = false;
-                } else {
-                    if (countSingle > 0) {
-                        if (!isSave) {
-                            count += countSingle;
-                        }
-                        isSave = true;
-                        fallList.push(new FallData(i, j, i,j-count));
-                    }
+        // for (let i = 0; i < this.map.length; i++) {
+        //     let count = 0;//累加上来的下落高度
+        //     let countSingle = 0;//单个方块的空隙高度
+        //     let isSave = false;
+        //     for (let j = 0; j < this.map[0].length; j++) {
+        //         //由下往上查找是否有空方块，如果有计数+1，继续查找直到不是空方块且计数不为0，保存该点，继续寻找下一个
+        //         //如果遇到冻结方块计数清零
+        //         if (this.map[i][j].data.isEmpty) {
+        //             if (isSave) {
+        //                 isSave = false;
+        //                 countSingle = 0;
+        //             }
+        //             countSingle++;
+        //         }else if(this.map[i][j].data.isFrozen){
+        //             count = 0;
+        //             countSingle = 0;
+        //             isSave = false;
+        //         } else {
+        //             if (countSingle > 0) {
+        //                 if (!isSave) {
+        //                     count += countSingle;
+        //                 }
+        //                 isSave = true;
+        //                 fallList.push(new FallData(i, j, i,j-count));
+        //             }
+        //         }
+        //     }
+        // }
+        let mapdata = this.getMapDataClone();
+        this.getFinalFallMap(mapdata);
+        for (let i = 0; i < mapdata.length; i++) {
+            for (let j = 0; j < mapdata[0].length; j++) {
+                let p = mapdata[i][j].defaultIndex;
+                if(!mapdata[i][j].isEmpty&&!mapdata[i][j].isFrozen&&(p.x!=i||p.y!=j)){
+                    fallList.push(new FallData(p.x, p.y, i,j));
+
                 }
             }
         }
         return fallList;
+    }
+    getFinalFallMap(mapdata:TileData[][]) {
+        let needRepeat = false;
+        for (let i = 0; i < mapdata.length; i++) {
+            for (let j = 0; j < mapdata[0].length; j++) {
+                if(j>0 && !mapdata[i][j].isFrozen && !mapdata[i][j].isEmpty){
+                    if(mapdata[i][j-1].isEmpty){
+                        let temp = mapdata[i][j];
+                        mapdata[i][j] = mapdata[i][j - 1];
+                        mapdata[i][j - 1] = temp;
+                        needRepeat = true;
+                    }else if(i>0&&mapdata[i-1][j].isFrozen&&mapdata[i-1][j-1].isEmpty){
+                        let temp = mapdata[i][j];
+                        mapdata[i][j] = mapdata[i-1][j - 1];
+                        mapdata[i-1][j - 1] = temp;
+                        needRepeat = true;
+                    }else if(i<mapdata.length-1&&mapdata[i+1][j].isFrozen&&mapdata[i+1][j-1].isEmpty){
+                        let temp = mapdata[i][j];
+                        mapdata[i][j] = mapdata[i+1][j - 1];
+                        mapdata[i+1][j - 1] = temp;
+                        needRepeat = true;
+                    }
+
+                }
+            }
+        }
+        if(needRepeat){
+            this.getFinalFallMap(mapdata);  
+        }
     }
     /**获取空的下标列表 */
     getEmptyList(): cc.Vec2[] {

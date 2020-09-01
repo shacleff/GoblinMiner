@@ -77,4 +77,14 @@ export default class MapHelper {
         }
         return false;
     }
+    /** 交换数据位置 */
+    static switchTileData(mapdata: TileData[][],tapPos: cc.Vec2, targetPos: cc.Vec2) {
+        let tile1 = mapdata[tapPos.x][tapPos.y];
+        let tile2 = mapdata[targetPos.x][targetPos.y];
+        let pos = tile1.posIndex;
+        tile1.posIndex = tile2.posIndex.clone();
+        tile2.posIndex = pos.clone();
+        mapdata[tapPos.x][tapPos.y] = tile2;
+        mapdata[targetPos.x][targetPos.y] = tile1;
+    }
 }
