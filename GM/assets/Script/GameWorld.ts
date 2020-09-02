@@ -142,7 +142,6 @@ export default class GameWorld extends cc.Component {
     }
     /** 打乱顺序 重新排列可移动元素 */
     randomSortMap(isAnim?: boolean, randomCount?: number) {
-        cc.log("randomSortMap");
         this.isRandoming = true;
         let indexs1: cc.Vec2[] = new Array();
         let indexs2: cc.Vec2[] = new Array();
@@ -409,7 +408,7 @@ export default class GameWorld extends cc.Component {
                         tile.data.tileSpecial = p.tileSpecial;
                         tile.node.opacity = 255;
                         tile.updateTile();
-                        cc.log(p);
+                        // cc.log(p);
                     } else if (tile.data.isBoss && this.boss.enabled) {
                         this.boss.takeDamge(1);
                     } else if (this.isOBFTile(cc.v2(p.x, p.y)) && (tile.data.obstacleLevel > 0||tile.data.frozenLevel > 0)) {
@@ -482,15 +481,10 @@ export default class GameWorld extends cc.Component {
         let count = 0;
         for (let i = 0; i < emptyList.length; i++) {
             let p = emptyList[i];
-            this.map[p.x][p.y].node.runAction(cc.sequence(cc.delayTime(this.speed * p.y / 10), cc.moveTo(this.speed, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE * 2))), cc.fadeIn(this.speed), cc.moveTo(this.speed * (1 + p.y / 2), GameWorld.getPosInMap(cc.v2(p.x, p.y))).easing(cc.easeBackIn()), cc.callFunc(() => {
+            this.map[p.x][p.y].node.runAction(cc.sequence(cc.delayTime(this.speed * p.y / 20), cc.moveTo(this.speed/2, GameWorld.getPosInMap(cc.v2(p.x, GameWorld.HEIGHT_SIZE * 2))), cc.fadeIn(this.speed), cc.moveTo(this.speed * (1 + p.y / 2), GameWorld.getPosInMap(cc.v2(p.x, p.y))).easing(cc.easeBackIn()), cc.callFunc(() => {
                 count++;
                 if (count == emptyList.length) {
-                    // let boomList = this.getBoomList([], []);
-                    // this.boomList = boomList;
-                    // this.boomTiles(boomList);
-                    // this.fillAfter(boomList);
                     this.canFall = true;
-
                 }
             })));
             this.map[p.x][p.y].initTile(TileData.getRandomTileData(p.x, p.y,0));
@@ -702,7 +696,7 @@ export default class GameWorld extends cc.Component {
             let pos = boomMap[k];
             boomList.push(pos);
         }
-        cc.log(boomList);
+        // cc.log(boomList);
         if (hasSpecial) {
             boomList = this.getExBoomList(boomList);
         }

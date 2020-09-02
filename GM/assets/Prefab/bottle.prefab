@@ -61,8 +61,8 @@
       "__type__": "TypedArray",
       "ctor": "Float64Array",
       "array": [
-        138,
-        779,
+        250,
+        340,
         0,
         0,
         0,
@@ -599,6 +599,9 @@
     },
     "graphics": {
       "__id__": 3
+    },
+    "bubble": {
+      "__id__": 11
     },
     "_id": ""
   },
