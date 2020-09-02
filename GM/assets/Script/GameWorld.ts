@@ -113,7 +113,6 @@ export default class GameWorld extends cc.Component {
         this.actorLayer.addChild(bp);
         this.boss = bp.getComponent(Boss);
         this.boss.gameWorld = this;
-        this.boss.data = new BossData(0, 'boss000', cc.v2(4, 1), 3, 3, cc.v2(0, 0));
         this.boss.hideBoss();
         this.boss.enabled = false;
     }
@@ -192,7 +191,7 @@ export default class GameWorld extends cc.Component {
     }
     /**地图下降 */
     downMap() {
-        Logic.currentMeter += 4;
+        Logic.currentMeter += 6;
         Logic.step += 3;
         let speed = 0.4;
         cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.FALL_DOWN } });
@@ -872,7 +871,7 @@ export default class GameWorld extends cc.Component {
         return this.map[pos1.x][pos1.y].data.tileType == this.map[pos2.x][pos2.y].data.tileType;
     }
     /**是否是障碍或者boss */
-    private isOBTile(pos:cc.Vec2):boolean{
+    public isOBTile(pos:cc.Vec2):boolean{
         let data = this.map[pos.x][pos.y].data;
         if(data.isBoss||data.isObstacle){
             return true;
@@ -880,7 +879,7 @@ export default class GameWorld extends cc.Component {
         return false;
     }
     /**是否是冻结障碍或者boss */
-    private isOBFTile(pos:cc.Vec2):boolean{
+    public isOBFTile(pos:cc.Vec2):boolean{
         let data = this.map[pos.x][pos.y].data;
         if(data.isBoss||data.isObstacle||data.isFrozen){
             return true;
@@ -888,9 +887,17 @@ export default class GameWorld extends cc.Component {
         return false;
     }
     /**是否是空、障碍或者boss */
-    private isOBETile(pos:cc.Vec2):boolean{
+    public isOBETile(pos:cc.Vec2):boolean{
         let data = this.map[pos.x][pos.y].data;
         if(data.isBoss||data.isObstacle||data.isEmpty){
+            return true;
+        }
+        return false;
+    }
+    /**是否是空、障碍、冻结或者boss */
+    public isOBEFTile(pos:cc.Vec2):boolean{
+        let data = this.map[pos.x][pos.y].data;
+        if(data.isBoss||data.isObstacle||data.isEmpty||data.isFrozen){
             return true;
         }
         return false;

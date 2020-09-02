@@ -20,6 +20,7 @@ const {ccclass, property} = cc._decorator;
 
 @ccclass
 export default class Boss extends cc.Component {
+    static RES_NAMES = ['boss000','boss000','boss000','boss000','boss001','boss001','boss001','boss001'];
     static readonly BOSS000 = 'boss000';
     static readonly BOSS001 = 'boss001';
     data:BossData;
@@ -46,10 +47,10 @@ export default class Boss extends cc.Component {
         this.isHurt = false;
         this.isDied = false;
         let res = `boss00${Logic.currentLevel}`;
-        if(Logic.currentLevel>1){
-            res = 'boss000'
+        if(Logic.currentLevel<Boss.RES_NAMES.length){
+            res = Boss.RES_NAMES[Logic.currentLevel];
         }
-        this.data = new BossData(0,`boss00${Logic.currentLevel}`,cc.v2(4,1),3,3,cc.v2(health,health));
+        this.data = new BossData(Logic.currentLevel,res,cc.v2(4,1),3,3,cc.v2(health,health));
         this.showBoss();
     }
     takeDamge(damage:number){
@@ -103,53 +104,72 @@ export default class Boss extends cc.Component {
         this.sprite.node.opacity = 200;
     }
     bossAction(){
-        switch(this.data.resName){
-            case Boss.BOSS000:this.addObstacle();break;
-            case Boss.BOSS001:this.addObstacle();break;
-        }
-    }
-    private addObstacle() {
         if (this.isDied||!this.enabled||!this.gameWorld) {
             return;
         }
-        
-        let obstacleLevel = 0;
-        if(Logic.currentLevel>2){
-            obstacleLevel = 1;
-        }
-        if(Logic.currentLevel>4){
-            obstacleLevel = 2;
-        }
-        cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.FALL_TILE } });
         if(this.isHurt){
             this.isHurt = false;
             return;
         }
         this.showAttackAnim();
+        switch(this.data.id){
+            case 0:this.addObstacle(0,1);break;
+            case 1:this.addObstacle(1,1);break;
+            case 2:this.addObstacle(0,2);break;
+            case 3:this.addObstacle(1,2);break;
+            case 4:this.addFrozen(1,1);break;
+            case 5:this.addFrozen(2,1);break;
+            case 6:this.addFrozen(3,1);break;
+            case 7:this.addFrozen(3,2);break;
+            default:this.addFrozen(3,3);break;
+        }
+    }
+    private getValidArr(frozenAllowed:boolean): cc.Vec2[]{
         let arr: cc.Vec2[] = new Array();
         for (let i = 0; i < this.gameWorld.map.length; i++) {
             for (let j = 0; j < this.gameWorld.map[0].length; j++) {
-                if (!this.gameWorld.map[i][j].data.isBoss && !this.gameWorld.map[i][j].data.isObstacle && !this.gameWorld.map[i][j].data.isEmpty) {
-                    arr.push(cc.v2(i, j));
+                if(frozenAllowed){
+                    if (!this.gameWorld.isOBETile(cc.v2(i,j))) {
+                        arr.push(cc.v2(i, j));
+                    }
+                }else{
+                    if (!this.gameWorld.isOBEFTile(cc.v2(i,j))) {
+                        arr.push(cc.v2(i, j));
+                    }
                 }
             }
         }
+        return arr;
+    }
+    private addFrozen(frozenLevel:number,sum:number) {
+        cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.FALL_TILE } });
+        let arr: cc.Vec2[] = this.getValidArr(false);
         if (arr.length > 0) {
-            let count = 1+Logic.currentLevel;
-            if(count>4){
-                count = 4;
-            }
-            for(let i = 0;i <count;i++){
+            for(let i = 0;i <sum;i++){
                 let rand = Random.getRandomNum(0, arr.length);
                 let pos = arr[rand];
                 if(arr.length>1){
                     arr.splice(rand,1);
                 }
-                let fronzenlevel = Logic.currentLevel;
-                if(fronzenlevel>3){
-                    fronzenlevel = 3;
+                this.gameWorld.map[pos.x][pos.y].data.frozenLevel = frozenLevel;
+                if(frozenLevel>0){
+                    this.gameWorld.map[pos.x][pos.y].data.isFrozen = true; 
                 }
-                this.gameWorld.map[pos.x][pos.y].initTile(TileData.getObstacleTileData(pos.x, pos.y, Random.getRandomNum(0,obstacleLevel),0));
+                this.gameWorld.map[pos.x][pos.y].updateTile();
+            }
+        }
+    }
+    private addObstacle(obstacleLevel:number,obstacleSum:number) {
+        cc.director.emit(EventConstant.PLAY_AUDIO, { detail: { name: AudioPlayer.FALL_TILE } });
+        let arr: cc.Vec2[] = this.getValidArr(true);
+        if (arr.length > 0) {
+            for(let i = 0;i <obstacleSum;i++){
+                let rand = Random.getRandomNum(0, arr.length);
+                let pos = arr[rand];
+                if(arr.length>1){
+                    arr.splice(rand,1);
+                }
+                this.gameWorld.map[pos.x][pos.y].initTile(TileData.getObstacleTileData(pos.x, pos.y, obstacleLevel,0));
             }
         }
     }
