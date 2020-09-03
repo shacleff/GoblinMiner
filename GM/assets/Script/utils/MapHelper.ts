@@ -16,7 +16,6 @@ export default class MapHelper {
                     mapdata[i][j] = mapdata[i][j + 1];
                     mapdata[i][j + 1] = temp;
                     if (MapHelper.checkPosHasThree(cc.v2(i, j), mapdata) || MapHelper.checkPosHasThree(cc.v2(i, j + 1), mapdata)) {
-                        cc.log("CanBoom");
                         return true;
                     }
                     //竖排元素复位
@@ -30,7 +29,6 @@ export default class MapHelper {
                     mapdata[i][j] = mapdata[i + 1][j];
                     mapdata[i + 1][j] = temp;
                     if (MapHelper.checkPosHasThree(cc.v2(i, j), mapdata) || MapHelper.checkPosHasThree(cc.v2(i + 1, j), mapdata)) {
-                        cc.log("CanBoom");
                         return true;
                     }
                     //横排元素复位
